@@ -19,10 +19,71 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
 server_script = os.path.join(project_root, 'server', 'mcp_server.py')
 
-#CONFIG - check model has been pulled from Ollama
+#Config- check model has been pulled from Ollama
 MODEL = "llama3.2" 
+WINDOW_TURNS = 8   #this is how many previous messages to store in the conversation window
+#the system prompt is also in there as well as the (at most) 8.
+
+system_prompt = """
+            You are the Intelligent Operations Manager for FlexMedia, a distributed split-rendering service.
+            Your goal is to balance Infrastructure Costs (opening Data Centres) against User Quality of Experience (Latency).
+            
+            
+            YOU HAVE ACCESS TO THESE TOOLS:
+            1. get_problem_status: check how many viewers are online.
+            2. solve_allocation(alpha, max_datacentres): Run the optimization engine.
+            
+            GUIDELINES FOR "ALPHA" (The Tradeoff Parameter):
+            - alpha = 0.0 to 1.0: "Budget Mode". Prioritizes low cost. High latency risk.
+            - alpha = 1.1 to 5.0: "Balanced Mode". Good compromise.
+            - alpha = >= 5.0: "Performance Mode". Prioritizes low latency (QoE). High cost.
+            - Do not set alpha above 10.0 under any circumstances.
+            
+            BEHAVIOUR:
+            - Always check the status first if you don't know the problem size.
+            - When a user asks to "optimize", DO NOT just guess an alpha. Ask them: "Do you want to prioritize Cost, Performance, or a Balance?"
+            - If the user gives a constraint (e.g. "budget is tight"), interpret that as low alpha (0.1).
+            - After solving, summarize the results in plain English (e.g. "I opened 3 centers...").
+            - If the user asks to only optimise for cost then set alpha = 0.0.
+            - Output must make clear that (unless alpha = 0.0) the objective function is not the raw cost, as it also consider the QoE penalty.
+            - If the user does not set max_datacentres then use 9999.
+            
+            OPTIMISATION PROBLEM DETAILS:
+            - Objective function: The objective is to minimise total cost, consisting of: (i) fixed costs for opening data centres, plus (ii) per-consumer delivery costs, plus (iii) a latency/QoE penalty term, where latency is weighted by a parameter alpha.
+            - Constraints: The main constraints are:
+                - Assignment: every consumer must be assigned to exactly one data centre.
+                - Open-before-serve: a consumer can only be assigned to a data centre if that data centre is open.
+                - Capacity: each open data centre can serve at most a fixed number of consumers given by its capacity.
+                - All decisions (open/closed and assignments) are binary.
+            
+            HANDLING UNCERTAINTY:
+                
+            DO / DO NOT:
+            - Do not set alpha above 10.0.
+            - Do not set max_datacentres in solve_allocation to "Null".
+            - Do set max_datacentres to be an integer.
+            - Do set max_datacentres to be 9999 if the user does not specify otherwise.
+                
+            """
+
 
 async def run_agent():
+    '''
+    This is an agent architecture that takes a user prompt into Llama 3.2 3B, 
+    goes off and collects the current workload, and based on the prompt 
+    automatically runs the optimisation to identify the optimal compute placement.
+    
+    The agent has a system prompt to encode problem context, information on
+    the tools that are available, and guidance on how to behave.
+    
+    Currently the agent has a system prompt, a user prompt, the tools it 
+    has available, and the output from any tools that it calls.
+    
+    Tools available:
+            1. get_problem_status: info about number of viewers/data centres
+            2. solve_allocation(alpha, max_datacentres): Run the optimization engine.
+        
+    '''
     print(f"🚀 Launching Server Process: {server_script}")
     
     #runs the server and scripts 
@@ -42,8 +103,11 @@ async def run_agent():
             tools = tools_response.tools
             print(f"Available Tools: {[t.name for t in tools]}")
             
-            # --- CHAT LOOP ---
-            messages = []
+            # Internal full log, independent of what is sent to the model
+            conversation_log = []
+            
+            #The LLM Chat Loop starts here
+            
             print("\n--- AGENT READY (Type 'quit' to exit) ---")
             print(f"Using Model: {MODEL}")
             
@@ -52,7 +116,15 @@ async def run_agent():
                 user_input = input("\nUser: ")
                 if user_input.lower() in ['quit', 'exit']: break
                 
-                messages.append({"role": "user", "content": user_input})
+            
+                #store user message in full log
+                user_msg = {"role": "user", "content": user_input}
+                conversation_log.append(user_msg)
+                
+                #create recent window of messages to send 
+                #always include the system prompt.
+                recent = conversation_log[-WINDOW_TURNS:]
+                messages = [{"role": "system", "content": system_prompt}] + recent
                 
                 #this loop converts MCP tools to Ollama tools
                 ollama_tools = []
@@ -77,9 +149,11 @@ async def run_agent():
                 )
                 
                 msg = response['message']
-                messages.append(msg) #this stores messages in a log 
+                messages.append(msg) #add to the message if the model wants to call a tool
+                #add model reply to full log
+                conversation_log.append(msg)
                 
-                #check if agent wants to coll a tool
+                #this then checks if agent wants to call a tool and calls it
                 if msg.get('tool_calls'):
                     print(f"Plan: Agent is calling {len(msg['tool_calls'])} tool(s)...")
                     
@@ -94,20 +168,25 @@ async def run_agent():
                             result = await session.call_tool(fn_name, fn_args)
                             
                             #first entry will be the text output from tool call
-                            output_text = result.content[0].text
-                            print(f"   -> Result: {output_text[:150]}...") #only store truncated logs
+                            tool_output_text = result.content[0].text
+                            print(f"Result: {tool_output_text[:150]}...") #only store truncated logs
                             
+                            
+                            #store tool output in full log
+                            tool_msg = {"role": "tool", "name": fn_name, "content": tool_output_text}
+                            conversation_log.append(tool_msg)
+
                             #pass tool output back to LLM
                             messages.append({
                                 "role": "tool",
-                                "content": output_text,
+                                "content": tool_output_text,
                             })
+                            
                         except Exception as e:
-                            print(f"   -> Tool Error: {e}")
-                            messages.append({
-                                "role": "tool",
-                                "content": f"Error executing tool: {e}",
-                            })
+                            print(f"  → Tool Error: {e}")
+                            conversation_log.append({"role": "tool",
+                                                     "name": fn_name,
+                                                     "content": f"Error: {e}"})
                     
                     #We now have the user prompt and the tool call outputs.
                     #These are used to produce the final LLM response.
@@ -116,7 +195,7 @@ async def run_agent():
                     messages.append(final_response['message'])
                 
                 else:
-                    # AI didn't use a tool, just talked
+                    #I didn't use a tool
                     print(f"\nAgent: {msg['content']}")
 
 if __name__ == "__main__":
