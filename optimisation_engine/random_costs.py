@@ -51,6 +51,20 @@ def random_consumer_costs(n_consumers, n_datacentres,
     return np.random.uniform(consumer_min, consumer_max, 
                              size=(n_datacentres, n_consumers))
 
+def random_energy_costs(n_consumers, n_datacentres, 
+                          energy_min, energy_max):
+    '''
+    This function randomly sampled the enegy cost of serving each of the n
+    consumers from each of the m datacentres.
+    
+    The data is returned such that we have a length m array, one entry per 
+    DC, and each of the n entries is a length n array wth each 
+    entry being the cost of serving each consumer from that datacentre.
+    '''
+    
+    return np.random.uniform(energy_min, energy_max, 
+                             size=(n_datacentres, n_consumers))
+
 def random_datacentre_capacities(datacentre_locations, edge_capacity,
                                  core_capacity):
     '''
