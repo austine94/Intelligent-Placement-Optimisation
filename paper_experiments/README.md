@@ -59,3 +59,29 @@ This compares the four scenarios across the configured Ollama SLMs `llama3.2`, `
 
 - `experiment_data/regret_model_sweep_average_regret_table.csv`
 - `experiment_data/regret_model_sweep_average_regret_table.md`
+
+## Parameter accuracy temperature sweep
+
+Run the parameter-selection accuracy temperature sweep with:
+
+```bash
+python paper_experiments/parameter_accuracy_temperature_sweep.py
+```
+
+This compares the four scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`. A selected alpha or beta is counted as correct when it is within `±0.1` of the scenario target. Each repetition receives a combined alpha/beta score: `1.0` when both are correct, `0.5` when exactly one is correct, and `0.0` when neither is correct. The script writes raw JSON results to `experiment_data/parameter_accuracy_temperature_sweep_results.json`, and writes proportion-correct tables to:
+
+- `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.csv`
+- `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.md`
+
+## Parameter accuracy model sweep
+
+Run the parameter-selection accuracy model sweep with:
+
+```bash
+python paper_experiments/parameter_accuracy_model_sweep.py
+```
+
+This compares the four scenarios across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It uses the same `±0.1` parameter tolerance and combined alpha/beta repetition score as the temperature sweep. The script writes raw JSON results to `experiment_data/parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
+
+- `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
+- `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`
