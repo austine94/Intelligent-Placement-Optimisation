@@ -1,0 +1,48 @@
+# Paper experiments
+
+This directory contains the illustrative benchmark experiment and plotting code for paper figures.
+
+- `illustrative_experiment.py` is a copy of the benchmark agent experiment configured to save its JSON output as `experiment_data/illustrative_experiment_results.json`.
+- `plot_illustrative_experiment.py` reads `experiment_data/illustrative_experiment_results.json`, then writes PDF plot outputs to `paper_plots/`. The scenario panels plot normalised metric means with standard-deviation error bars so cost, energy, and latency can share a single axis.
+
+Run the experiment first:
+
+```bash
+python paper_experiments/illustrative_experiment.py
+```
+
+This writes the experiment JSON output to:
+
+- `experiment_data/illustrative_experiment_results.json`
+
+Then generate the plot outputs:
+
+```bash
+python paper_experiments/plot_illustrative_experiment.py
+```
+
+The plotting script creates one scenario PDF output per benchmark prompt:
+
+- `paper_plots/illustrative_experiment_focus_cost.pdf`
+- `paper_plots/illustrative_experiment_focus_energy.pdf`
+- `paper_plots/illustrative_experiment_focus_latency.pdf`
+- `paper_plots/illustrative_experiment_balanced.pdf`
+
+It also creates the combined 2 x 2 PDF output:
+
+- `paper_plots/illustrative_experiment_all.pdf`
+
+The JSON and PDF files are generated outputs, not source scripts, so they are ignored by git and can be regenerated whenever experiment results change.
+
+## Regret temperature sweep
+
+Run the regret temperature sweep with:
+
+```bash
+python paper_experiments/regret_temperature_sweep.py
+```
+
+This compares the four scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`, writes raw JSON results to `experiment_data/regret_temperature_sweep_results.json`, and writes average objective-regret percentage tables to:
+
+- `experiment_data/regret_temperature_sweep_average_regret_table.csv`
+- `experiment_data/regret_temperature_sweep_average_regret_table.md`
