@@ -46,3 +46,16 @@ This compares the four scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.
 
 - `experiment_data/regret_temperature_sweep_average_regret_table.csv`
 - `experiment_data/regret_temperature_sweep_average_regret_table.md`
+
+## Regret model sweep
+
+Run the regret model sweep with:
+
+```bash
+python paper_experiments/regret_model_sweep.py
+```
+
+This compares the four scenarios across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It writes raw JSON results to `experiment_data/regret_model_sweep_results.json`, and writes average objective-regret percentage tables to:
+
+- `experiment_data/regret_model_sweep_average_regret_table.csv`
+- `experiment_data/regret_model_sweep_average_regret_table.md`
