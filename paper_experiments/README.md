@@ -85,3 +85,29 @@ This compares the four scenarios across the configured Ollama SLMs `llama3.2`, `
 
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`
+
+## Scalability experiment
+
+Run the balanced-objective scalability experiment with:
+
+```bash
+python paper_experiments/scalability_experiment.py
+```
+
+This generates workloads with `50, 100, ..., 1000` consumers using `scripts/scalability_data_generator.py`, with 30 repetitions per workload size. Each workload uses 5 datacentres with capacity 1100 each so the 1000-consumer instances are feasible. For each generated workload, the script evaluates the balanced scenario across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It records objective-regret percentage against the balanced optimum, all top-level Ollama count fields, total token count, agent end-to-end time, and total case time. Raw JSON results are written to `experiment_data/scalability_experiment_results.json`, and average metric tables are written to:
+
+- `experiment_data/scalability_average_metrics_table.csv`
+- `experiment_data/scalability_average_metrics_table.md`
+
+Then generate the scalability plot outputs with:
+
+```bash
+python paper_experiments/plot_scalability_experiment.py
+```
+
+The plotting script creates one PDF line plot per aggregate metric:
+
+- `paper_plots/scalability_average_regret.pdf`
+- `paper_plots/scalability_average_tokens.pdf`
+- `paper_plots/scalability_average_agent_time.pdf`
+- `paper_plots/scalability_average_total_case_time.pdf`
