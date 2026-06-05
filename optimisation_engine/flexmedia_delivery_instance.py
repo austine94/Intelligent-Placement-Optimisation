@@ -65,6 +65,8 @@ class flexmedia_delivery_instance:
         self.open_centres = None
         self.exact_obj = None
         self.lagrangian_feasible_obj= None
+        self.solve_status = None
+        self.solve_status_message = None
     
     
     def plot_instance(self):
@@ -223,6 +225,8 @@ class flexmedia_delivery_instance:
         flexmedia_model.optimize()
         
         status = flexmedia_model.status
+        self.solve_status = status
+        self.solve_status_message = None
         
         if status == GRB.OPTIMAL:
             #if the optimal solution has been found
@@ -242,7 +246,7 @@ class flexmedia_delivery_instance:
         
         elif status in (GRB.INFEASIBLE, GRB.INF_OR_UNBD, GRB.UNBOUNDED):
             #in this instance the model cannot solve the instance.
-            print(f"Model is infeasible or unbounded (status = {status}).")
+            self.solve_status_message = f"Model is infeasible or unbounded (status = {status})."
             self.optimisation_model = flexmedia_model
             self.optimisation_model_type = 'Exact'
             self.exact_obj = None
@@ -252,11 +256,11 @@ class flexmedia_delivery_instance:
         else:
             #if the model has not returned the optimal sol, but also not 
             #proven infeasibility.
-            print(f"Optimization ended with status {status}.")
+            self.solve_status_message = f"Optimization ended with status {status}."
             if flexmedia_model.SolCount > 0:
                 # There *is* a feasible solution, just not proven optimal.
                 obj = flexmedia_model.objVal
-                print(f"Best found objective = {obj}")
+                self.solve_status_message += f" Best found objective = {obj}"
                 self.optimisation_model = flexmedia_model
                 self.optimisation_model_type = 'Exact'
                 self.exact_obj = obj

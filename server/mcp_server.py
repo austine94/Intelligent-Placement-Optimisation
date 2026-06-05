@@ -10,7 +10,8 @@ import contextlib
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
 engine_path = os.path.join(project_root, 'optimisation_engine')
-sys.path.append(engine_path)
+if engine_path not in sys.path:
+    sys.path.insert(0, engine_path)
 
 from flexmedia_delivery_instance import flexmedia_delivery_instance
 
@@ -72,6 +73,20 @@ def load_problem_into_instance():
     
     return inst
 
+
+def capacity_diagnostic(inst) -> str:
+    """Return a concise capacity diagnostic for infeasible assignment models."""
+    n_consumers = len(inst.consumer_locations)
+    usable_capacity = int(np.floor(inst.datacentre_capacities).sum())
+    raw_capacity = float(np.sum(inst.datacentre_capacities))
+    if usable_capacity < n_consumers:
+        return (
+            f" Total usable datacentre capacity is {usable_capacity} "
+            f"(raw capacity {raw_capacity:.2f}) for {n_consumers} viewers; "
+            "regenerate the scenario with more/larger datacentres."
+        )
+    return ""
+
 @contextlib.contextmanager
 def suppress_stdout():
     """Silences Gurobi prints"""
@@ -112,12 +127,14 @@ def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str:
     try:
         inst = load_problem_into_instance()
         
-        #solve and save
-        inst.exact_solve(alpha = alpha, beta = beta)
+        #solve and save. Suppress stdout because MCP stdio must only emit JSON-RPC.
+        with suppress_stdout():
+            inst.exact_solve(alpha = alpha, beta = beta)
         LAST_SOLVED_INSTANCE = inst
         
         if inst.exact_obj is None:
-            return "Solver failed or found no feasible solution."
+            status_message = inst.solve_status_message or "Solver failed or found no feasible solution."
+            return f"{status_message}{capacity_diagnostic(inst)}"
 
         #get metrics for solution
         metrics = inst.get_exact_solution_breakdown()
