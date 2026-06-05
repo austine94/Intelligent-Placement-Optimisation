@@ -22,6 +22,28 @@ n_consumers = 100
 n_hotspots = 5
 output_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'current_problem.json')
 
+
+def ensure_feasible_capacity(inst, n_consumers):
+    """Increase generated capacities if needed so every consumer can be assigned.
+
+    Gurobi assigns whole consumers to data centres.  Because generated
+    capacities are floating-point values, the usable capacity of a centre is
+    its floor; a scenario is feasible only when the sum of those floors covers
+    all consumers.
+    """
+    usable_capacity = int(np.floor(inst.datacentre_capacities).sum())
+    if usable_capacity >= n_consumers:
+        return
+
+    shortfall = n_consumers - usable_capacity
+    n_datacentres = len(inst.datacentre_capacities)
+    base_increase = shortfall // n_datacentres
+    remainder = shortfall % n_datacentres
+
+    inst.datacentre_capacities = np.floor(inst.datacentre_capacities).astype(float)
+    inst.datacentre_capacities += base_increase
+    inst.datacentre_capacities[:remainder] += 1
+
 if __name__ == "__main__":
     
     #parser for optional seed argument
@@ -40,6 +62,7 @@ if __name__ == "__main__":
 
     #create instance
     inst = flexmedia_delivery_instance(n_datacentres, n_consumers, n_hotspots)
+    ensure_feasible_capacity(inst, n_consumers)
     
     # 4. Save to JSON
     data = {
