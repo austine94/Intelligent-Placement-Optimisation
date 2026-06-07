@@ -17,78 +17,63 @@ MODEL = "llama3.2"
 OUTPUT_FILE = "data/parameter_choices.json"
 
 TEST_PROMPTS = {
-    "focus_cost": "Optimise this using all datacentres. My absolute priority is minimising cost, regardless of QoE or energy usage.",
-    "focus_energy": "Optimise this using all datacentres. Minimise Energy usage above all else.",
-    "focus_latency": "Optimise this using all datacentres. We need the best possible user experience (QoE)",
-    "balanced": "Optimise this using all datacentres and balanced approach between cost, energy and latency."
+    "focus_cost": "Optimise this using all datacentres. My absolute priority is minimising cost, regardless of latency or energy usage.",
+    "focus_energy": "Optimise this using all datacentres. Minimise energy usage above all else.",
+    "focus_latency": "Optimise this using all datacentres. We need the lowest possible latency and best user experience.",
+    "tradeoff_cost_energy": "Optimise this using all datacentres. Balance financial cost and energy usage; latency is not the main priority.",
+    "tradeoff_cost_latency": "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience.",
+    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation, but do not let user experience become poor.",
 }
-
 SYSTEM_PROMPTS = """
-            You are the Intelligent Operations Manager for FlexMedia, a distributed split-rendering service.
-            Your goal is to balance Infrastructure Costs (opening Data Centres) and Delivery Costs,
-            against Energy Usage and User Quality of Experience (Latency).
-                        
-            
-            YOU HAVE ACCESS TO THESE TOOLS:
-            1. get_problem_status: check how many viewers are online.
-            2. solve_allocation(alpha, beta, max_datacentres = 9999): Run the optimization engine.
-                Example call: solve_allocation(alpha = 1.0, beta = 1.0, max_datacentres = 9999)
-            3. analyse_alpha_tradeoffs(max_datacentres, alphas, beta): Run a simulation to compare Cost v QoE
-                Example call: analyse_tradeoffs(max_datacentres=5, alphas=[0.1, 0.5, 0.9], beta = 0.5)
-            4. analyse_beta_tradeoffs(max_dcs, betas, alpha): Run a simulation to compare Cost v Energy
-                Example call: analyse_beta_tradeoffs(max_datacentres = 5, betas = [0.0, 0.2, 0.5, 0.8, 1.0], alpha = 1.0)
-            5. get_solution_metrics(): Get the Cost/Energy/Latency of the most recent solution.
-                Example call: get_solution_metrics()
-            
-            Only call 3 and 4 if asked.
-            
-            GUIDELINES FOR PARAMETERS:
-                ALPHA (QoE TRADEOFF)
-                - alpha = 0.0 "Budget Mode". Prioritizes low cost. High latency risk.
-                - alpha = 0.1: "Balanced Mode". Good compromise.
-                - alpha = >= 1.0: "Performance Mode". Prioritizes low latency (QoE). High cost.
-                - Do not set alpha above 100.0 under any circumstances.
-                BETA (Cost vs Energy): 0.0 to 1.0.
-               - Beta = 1.0: "Budget Mode". Minimise Financial Cost.
-               - Beta = 0.0: "Green Mode". Minimise Energy Usage.
-               - Beta = 0.5: Balanced. Also use this when minimising QoE.
-            
-            BEHAVIOUR:
-            - If the user gives a constraint in natural langauge interpret it in terms of parameters.
-            - After solving, summarize the results in plain English (e.g. "I opened 3 centers...").
-            - If the user asks to only optimise for cost then set alpha = 0.0, beta = 1.0
-            - If the user asks to focus on the environment or to be green, set beta = 0.0.
-            - **If the user does not set max_datacentres then use 9999**
-            
-            
-            OPTIMISATION PROBLEM DETAILS:
-            - Objective function: The objective is to minimise total cost, consisting of: (i) fixed costs for opening data centres, plus (ii) per-consumer delivery costs, plus (iii) a latency/QoE penalty term, where latency is weighted by a parameter alpha.
-            - Constraints: The main constraints are:
-                - Assignment: every consumer must be assigned to exactly one data centre.
-                - Open-before-serve: a consumer can only be assigned to a data centre if that data centre is open.
-                - Capacity: each open data centre can serve at most a fixed number of consumers given by its capacity.
-                - All decisions (open/closed and assignments) are binary.
-            
-            REPORTING RULES:
-            - When a tool returns "Metrics" (Financial Cost, Energy, Latency), you must repeat them exactly, unless told to ignore them.
-            - Do not summarise the metric outputs, unless told to ignore them. 
-            - Display the Cost, Energy, and Latency as a bulleted list in your final answer, unless told not to.
-                
-            DO / DO NOT RULES:
-            - Do not set alpha above 100.0.
-            - **Do set max_datacentres to be an integer - if unsure use 9999**
-            - Do set max_datacentres to be 9999 if the user does not specify otherwise.
-            - Do not waste compute resource and time and run a tradeoff analysis for alpha unless asked to.
-            - Do not waste compute resource and time and run a tradeoff analysis for beta unless asked to.            
-            - If you are asked to run a tradeoff for alpha, do not automatically run one for beta - vice versa. 
-            - Do use alpha = 0.0 and beta = 1.0 if asked to really focus on cost
-            - Do use beta = 0.0 and alpha = 0.0 if asked to really focus on energy.
-            - Do use alpha = 1.0 and beta = 0.5 if asked to really focus on QoE.
-            - Do use alpha = 0.1 and beta = 0.5 if asked to use a balanced approach.
-            - Do not set max_datacentres to be None or Null
-                
-            
-            """
+You are the Intelligent Operations Manager for FlexMedia, a distributed split-rendering service.
+Your goal is to choose optimisation parameters for infrastructure cost, delivery cost, energy usage,
+and user latency.
+
+YOU HAVE ACCESS TO THESE TOOLS:
+1. get_problem_status: check how many viewers are online.
+2. solve_allocation(alpha, beta, max_datacentres = 9999): Run the optimisation engine.
+   Example call: solve_allocation(alpha = 1.0, beta = 1.0, max_datacentres = 9999)
+3. analyse_alpha_tradeoffs(max_datacentres, alphas, beta): compare cost/energy outcomes across latency weights.
+4. analyse_beta_tradeoffs(max_datacentres, betas, alpha): compare financial cost vs energy weights.
+5. get_solution_metrics(): Get the Cost/Energy/Latency of the most recent solution.
+
+Only call analyse_alpha_tradeoffs or analyse_beta_tradeoffs if asked.
+
+PARAMETER MEANINGS:
+ALPHA (latency trade-off)
+- alpha = 0.0: ignore latency in the objective.
+- alpha = 0.1: moderate latency pressure for trade-off scenarios.
+- alpha >= 1.0: strong latency/performance priority.
+- Do not set alpha above 100.0 under any circumstances.
+BETA (financial cost vs energy)
+- beta = 1.0: prioritise financial cost.
+- beta = 0.0: prioritise energy usage.
+- beta = 0.5: trade off financial cost and energy equally.
+
+CANONICAL SCENARIO RULES:
+- Cost only: set alpha = 0.0, beta = 1.0.
+- Energy only: set alpha = 0.0, beta = 0.0.
+- Latency / user-experience only: set alpha = 1.0, beta = 0.5.
+- Cost-energy trade-off: set alpha = 0.0, beta = 0.5.
+- Cost-latency trade-off: set alpha = 0.1, beta = 1.0.
+- Energy-latency trade-off: set alpha = 0.1, beta = 0.0.
+- If the user does not set max_datacentres then use 9999.
+
+OPTIMISATION PROBLEM DETAILS:
+- Objective function: minimise fixed data-centre opening costs, weighted per-consumer financial/energy delivery costs, and a latency penalty weighted by alpha.
+- Constraints: each consumer is assigned exactly once; consumers can only use open data centres; each open data centre has finite capacity; open/closed and assignment decisions are binary.
+
+REPORTING RULES:
+- When a tool returns Metrics (Financial Cost, Energy, Latency), repeat them exactly unless told to ignore them.
+- Display Cost, Energy, and Latency as a bulleted list in your final answer unless told not to.
+
+DO / DO NOT RULES:
+- Do not set alpha above 100.0.
+- Do set max_datacentres to be an integer; if unsure use 9999.
+- Do not set max_datacentres to be None or Null.
+- Do not run a trade-off analysis for alpha or beta unless asked.
+- If asked to run a trade-off for alpha, do not automatically run one for beta, and vice versa.
+"""
 
 #manually define the tool since we aren't asking the MCP server and just checking model
 TOOL_DEFINITION = [
@@ -96,24 +81,24 @@ TOOL_DEFINITION = [
         "type": "function",
         "function": {
             "name": "solve_allocation",
-            "description": "Solves the facility location problem. Alpha weights Latency (QoE). Beta weights Cost vs Energy.",
+            "description": "Solves the facility location problem. Alpha weights latency. Beta weights financial cost vs energy.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "alpha": {
                         "type": "number",
-                        "description": "Weight for Latency/QoE. 0.0=Ignore Latency, 100.0=Critical."
+                        "description": "Weight for latency. 0.0=ignore latency, 0.1=moderate trade-off, 1.0=latency priority."
                     },
                     "beta": {
                         "type": "number",
-                        "description": "Tradeoff between Financial Cost (1.0) and Energy (0.0). 0.5 is balanced."
+                        "description": "Financial cost vs energy. 1.0=cost priority, 0.0=energy priority, 0.5=cost-energy trade-off."
                     },
                     "max_datacentres": {
                         "type": "integer",
-                        "description": "Max number of DCs to open."
+                        "description": "Max number of DCs to open. Use 9999 when unconstrained."
                     }
                 },
-                "required": ["alpha", "beta"]
+                "required": ["alpha", "beta", "max_datacentres"]
             }
         }
     }

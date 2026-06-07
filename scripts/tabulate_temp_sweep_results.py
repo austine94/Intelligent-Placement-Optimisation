@@ -21,10 +21,19 @@ OUTPUT_DIR = "data"
 CATEGORY_MAP = {
     "focus_cost": "Cost",
     "focus_energy": "Energy",
-    "focus_latency": "QoE",
-    "balanced": "Balanced",
+    "focus_latency": "Latency",
+    "tradeoff_cost_energy": "Cost-Energy",
+    "tradeoff_cost_latency": "Cost-Latency",
+    "tradeoff_energy_latency": "Energy-Latency",
 }
-CATEGORY_ORDER = ["focus_cost", "focus_energy", "focus_latency", "balanced"]
+CATEGORY_ORDER = [
+    "focus_cost",
+    "focus_energy",
+    "focus_latency",
+    "tradeoff_cost_energy",
+    "tradeoff_cost_latency",
+    "tradeoff_energy_latency",
+]
 METRICS = ["cost", "energy", "latency"]
 
 

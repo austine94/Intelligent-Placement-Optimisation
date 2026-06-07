@@ -11,8 +11,10 @@ RESULTS_FILE = "data/benchmark_results.json"
 CATEGORY_MAP = {
     "focus_cost": "Cost",
     "focus_energy": "Energy",
-    "focus_latency": "QoE",
-    "balanced": "Balanced"
+    "focus_latency": "Latency",
+    "tradeoff_cost_energy": "Cost-Energy",
+    "tradeoff_cost_latency": "Cost-Latency",
+    "tradeoff_energy_latency": "Energy-Latency",
 }
 
 def load_and_process_data():
@@ -65,7 +67,7 @@ def plot_benchmarks(df):
     ]
     
     #define the specific order we want on the x axis
-    order = ["Cost", "Energy", "QoE", "Balanced"]
+    order = ["Cost", "Energy", "Latency", "Cost-Energy", "Cost-Latency", "Energy-Latency"]
     
     for config in metrics_config:
         metric = config["col"]
@@ -83,7 +85,7 @@ def plot_benchmarks(df):
         )
         
         plt.title(f"Average {metric}", fontsize=14, fontweight='bold')
-        plt.xlabel("Priority", fontsize=12)
+        plt.xlabel("Scenario", fontsize=12)
         plt.ylabel(metric, fontsize=11)
         
         plt.tight_layout()

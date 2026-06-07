@@ -2,8 +2,19 @@
 
 This directory contains the illustrative benchmark experiment and plotting code for paper figures.
 
-- `illustrative_experiment.py` is a copy of the benchmark agent experiment configured to save its JSON output as `experiment_data/illustrative_experiment_results.json`.
-- `plot_illustrative_experiment.py` reads `experiment_data/illustrative_experiment_results.json`, then writes PDF plot outputs to `paper_plots/`. The scenario panels plot normalised metric means with standard-deviation error bars so cost, energy, and latency can share a single axis.
+The active paper experiments evaluate six prompt scenarios:
+
+- `focus_cost`: financial-cost priority (`alpha=0.0`, `beta=1.0`).
+- `focus_energy`: energy priority (`alpha=0.0`, `beta=0.0`).
+- `focus_latency`: latency / user-experience priority (`alpha=1.0`, `beta=0.5`).
+- `tradeoff_cost_energy`: cost-energy trade-off with latency not central (`alpha=0.0`, `beta=0.5`).
+- `tradeoff_cost_latency`: cost-latency trade-off (`alpha=0.1`, `beta=1.0`).
+- `tradeoff_energy_latency`: energy-latency trade-off (`alpha=0.1`, `beta=0.0`).
+
+## Illustrative experiment
+
+`illustrative_experiment.py` is a copy of the benchmark agent experiment configured to save its JSON output as `experiment_data/illustrative_experiment_results.json`.
+`plot_illustrative_experiment.py` reads `experiment_data/illustrative_experiment_results.json`, then writes PDF plot outputs to `paper_plots/`. The scenario panels plot normalised metric means with standard-deviation error bars so cost, energy, and latency can share a single axis.
 
 Run the experiment first:
 
@@ -26,9 +37,11 @@ The plotting script creates one scenario PDF output per benchmark prompt:
 - `paper_plots/illustrative_experiment_focus_cost.pdf`
 - `paper_plots/illustrative_experiment_focus_energy.pdf`
 - `paper_plots/illustrative_experiment_focus_latency.pdf`
-- `paper_plots/illustrative_experiment_balanced.pdf`
+- `paper_plots/illustrative_experiment_tradeoff_cost_energy.pdf`
+- `paper_plots/illustrative_experiment_tradeoff_cost_latency.pdf`
+- `paper_plots/illustrative_experiment_tradeoff_energy_latency.pdf`
 
-It also creates the combined 2 x 2 PDF output:
+It also creates the combined 2 x 3 PDF output:
 
 - `paper_plots/illustrative_experiment_all.pdf`
 
@@ -42,7 +55,7 @@ Run the regret temperature sweep with:
 python paper_experiments/regret_temperature_sweep.py
 ```
 
-This compares the four scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`, writes raw JSON results to `experiment_data/regret_temperature_sweep_results.json`, and writes average objective-regret percentage tables to:
+This compares the six scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`, writes raw JSON results to `experiment_data/regret_temperature_sweep_results.json`, and writes average objective-regret percentage tables to:
 
 - `experiment_data/regret_temperature_sweep_average_regret_table.csv`
 - `experiment_data/regret_temperature_sweep_average_regret_table.md`
@@ -55,7 +68,7 @@ Run the regret model sweep with:
 python paper_experiments/regret_model_sweep.py
 ```
 
-This compares the four scenarios across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It writes raw JSON results to `experiment_data/regret_model_sweep_results.json`, and writes average objective-regret percentage tables to:
+This compares the six scenarios across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It writes raw JSON results to `experiment_data/regret_model_sweep_results.json`, and writes average objective-regret percentage tables to:
 
 - `experiment_data/regret_model_sweep_average_regret_table.csv`
 - `experiment_data/regret_model_sweep_average_regret_table.md`
@@ -68,7 +81,7 @@ Run the parameter-selection accuracy temperature sweep with:
 python paper_experiments/parameter_accuracy_temperature_sweep.py
 ```
 
-This compares the four scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`. A selected alpha or beta is counted as correct when it is within `±0.1` of the scenario target. Each repetition receives a combined alpha/beta score: `1.0` when both are correct, `0.5` when exactly one is correct, and `0.0` when neither is correct. The script writes raw JSON results to `experiment_data/parameter_accuracy_temperature_sweep_results.json`, and writes proportion-correct tables to:
+This compares the six scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`. A selected alpha or beta is counted as correct when it is within `±0.05` of the scenario target. Each repetition receives a combined alpha/beta score: `1.0` when both are correct, `0.5` when exactly one is correct, and `0.0` when neither is correct. The script writes raw JSON results to `experiment_data/parameter_accuracy_temperature_sweep_results.json`, and writes proportion-correct tables to:
 
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.md`
@@ -81,20 +94,20 @@ Run the parameter-selection accuracy model sweep with:
 python paper_experiments/parameter_accuracy_model_sweep.py
 ```
 
-This compares the four scenarios across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It uses the same `±0.1` parameter tolerance and combined alpha/beta repetition score as the temperature sweep. The script writes raw JSON results to `experiment_data/parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
+This compares the six scenarios across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It uses the same `±0.05` parameter tolerance and combined alpha/beta repetition score as the temperature sweep. The script writes raw JSON results to `experiment_data/parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
 
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`
 
 ## Scalability experiment
 
-Run the balanced-objective scalability experiment with:
+Run the cost-latency trade-off scalability experiment with:
 
 ```bash
 python paper_experiments/scalability_experiment.py
 ```
 
-This generates workloads with `50, 100, ..., 1000` consumers using `scripts/scalability_data_generator.py`, with 30 repetitions per workload size. Each workload uses 5 datacentres with capacity 1100 each so the 1000-consumer instances are feasible. For each generated workload, the script evaluates the balanced scenario across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It records objective-regret percentage against the balanced optimum, all top-level Ollama count fields, total token count, agent end-to-end time, and total case time. Raw JSON results are written to `experiment_data/scalability_experiment_results.json`, and average metric tables are written to:
+This generates workloads with `50, 100, ..., 1000` consumers using `scripts/scalability_data_generator.py`, with 30 repetitions per workload size. Each workload uses 5 datacentres with capacity 1100 each so the 1000-consumer instances are feasible. For each generated workload, the script evaluates the `tradeoff_cost_latency` scenario across the configured Ollama SLMs `llama3.2`, `llama3.2:1b`, `llama3.1:8b`, `qwen3:4b`, and `gemma3:4b` at temperature `0.0`. It records objective-regret percentage against the cost-latency target, all top-level Ollama count fields, total token count, agent end-to-end time, and total case time. Raw JSON results are written to `experiment_data/scalability_experiment_results.json`, and average metric tables are written to:
 
 - `experiment_data/scalability_average_metrics_table.csv`
 - `experiment_data/scalability_average_metrics_table.md`

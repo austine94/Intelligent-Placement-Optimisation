@@ -37,28 +37,39 @@ SERVER_SCRIPT = PROJECT_ROOT / "server" / "mcp_server.py"
 GENERATOR_SCRIPT = PROJECT_ROOT / "scripts" / "generate_scenario.py"
 
 TEST_PROMPTS = {
-    "focus_cost": "Optimise this using all datacentres. My absolute priority is minimising cost, regardless of QoE or energy usage.",
-    "focus_energy": "Optimise this using all datacentres. Minimise Energy usage above all else.",
-    "focus_latency": "Optimise this using all datacentres. We need the best possible user experience (QoE)",
-    "balanced": "Optimise this using all datacentres and balanced approach between cost, energy and latency.",
+    "focus_cost": "Optimise this using all datacentres. My absolute priority is minimising cost, regardless of latency or energy usage.",
+    "focus_energy": "Optimise this using all datacentres. Minimise energy usage above all else.",
+    "focus_latency": "Optimise this using all datacentres. We need the lowest possible latency and best user experience.",
+    "tradeoff_cost_energy": "Optimise this using all datacentres. Balance financial cost and energy usage; latency is not the main priority.",
+    "tradeoff_cost_latency": "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience.",
+    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation, but do not let user experience become poor.",
 }
-
 SCENARIO_LABELS = {
     "focus_cost": "Cost",
     "focus_energy": "Energy",
-    "focus_latency": "QoE",
-    "balanced": "Balanced",
+    "focus_latency": "Latency",
+    "tradeoff_cost_energy": "Cost-Energy",
+    "tradeoff_cost_latency": "Cost-Latency",
+    "tradeoff_energy_latency": "Energy-Latency",
 }
-SCENARIO_ORDER = ["focus_cost", "focus_energy", "focus_latency", "balanced"]
 
+SCENARIO_ORDER = [
+    "focus_cost",
+    "focus_energy",
+    "focus_latency",
+    "tradeoff_cost_energy",
+    "tradeoff_cost_latency",
+    "tradeoff_energy_latency",
+]
 # Fixed optimum parameters used as the regret baseline for each scenario.
 OPTIMAL_PARAMS = {
     "focus_cost": {"alpha": 0.0, "beta": 1.0, "max_datacentres": 9999},
     "focus_energy": {"alpha": 0.0, "beta": 0.0, "max_datacentres": 9999},
     "focus_latency": {"alpha": 1.0, "beta": 0.5, "max_datacentres": 9999},
-    "balanced": {"alpha": 0.1, "beta": 0.5, "max_datacentres": 9999},
+    "tradeoff_cost_energy": {"alpha": 0.0, "beta": 0.5, "max_datacentres": 9999},
+    "tradeoff_cost_latency": {"alpha": 0.1, "beta": 1.0, "max_datacentres": 9999},
+    "tradeoff_energy_latency": {"alpha": 0.1, "beta": 0.0, "max_datacentres": 9999},
 }
-
 
 def parse_metrics_from_text(text_output: str) -> dict[str, float]:
     """Extract Financial Cost / Energy Usage / Latency numeric fields from tool output."""

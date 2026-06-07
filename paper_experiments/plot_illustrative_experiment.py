@@ -1,7 +1,7 @@
 """Create paper-ready PDF plots for the illustrative benchmark experiment.
 
 The script reads illustrative benchmark results from the experiment_data
-folder, creates one PDF per scenario, and creates a combined 2 x 2 PDF
+folder, creates one PDF per scenario, and creates a combined 2 x 3 PDF
 containing all scenarios.
 It intentionally uses only the Python standard library so plots can be
 regenerated in minimal execution environments.
@@ -23,8 +23,10 @@ PLOTS_DIR = SCRIPT_DIR / "paper_plots"
 SCENARIO_LABELS = {
     "focus_cost": "Cost priority",
     "focus_energy": "Energy priority",
-    "focus_latency": "QoE priority",
-    "balanced": "Balanced priority",
+    "focus_latency": "Latency priority",
+    "tradeoff_cost_energy": "Cost-energy trade-off",
+    "tradeoff_cost_latency": "Cost-latency trade-off",
+    "tradeoff_energy_latency": "Energy-latency trade-off",
 }
 
 METRIC_LABELS = {
@@ -33,7 +35,14 @@ METRIC_LABELS = {
     "latency": "Latency",
 }
 
-SCENARIO_ORDER = ["focus_cost", "focus_energy", "focus_latency", "balanced"]
+SCENARIO_ORDER = [
+    "focus_cost",
+    "focus_energy",
+    "focus_latency",
+    "tradeoff_cost_energy",
+    "tradeoff_cost_latency",
+    "tradeoff_energy_latency",
+]
 METRIC_ORDER = ["cost", "energy", "latency"]
 BAR_COLOURS = {
     "cost": (0.18, 0.38, 0.62),
@@ -255,15 +264,17 @@ def save_individual_scenario_plots(results: dict[str, list[dict]], maxima: dict[
 
 
 def save_combined_plot(results: dict[str, list[dict]], maxima: dict[str, float]) -> None:
-    """Save all four scenario plots in a combined 2 x 2 PDF."""
-    page = PdfPage(width=792, height=612)
-    page.text(36, 578, "Illustrative experiment results", size=18)
+    """Save all six scenario plots in a combined 2 x 3 PDF."""
+    page = PdfPage(width=1080, height=720)
+    page.text(36, 684, "Illustrative experiment results", size=18)
 
     panel_positions = [
-        (36, 314, 360, 248),
-        (420, 314, 360, 248),
-        (36, 42, 360, 248),
-        (420, 42, 360, 248),
+        (36, 386, 324, 284),
+        (390, 386, 324, 284),
+        (744, 386, 324, 284),
+        (36, 54, 324, 284),
+        (390, 54, 324, 284),
+        (744, 54, 324, 284),
     ]
 
     for scenario, (x, y, width, height) in zip(SCENARIO_ORDER, panel_positions):

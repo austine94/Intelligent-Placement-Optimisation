@@ -20,10 +20,12 @@ INPUT_FILE = "data/benchmark_regret_results.json"
 CATEGORY_MAP = {
     "focus_cost": "Cost",
     "focus_energy": "Energy",
-    "focus_latency": "QoE",
-    "balanced": "Balanced",
+    "focus_latency": "Latency",
+    "tradeoff_cost_energy": "Cost-Energy",
+    "tradeoff_cost_latency": "Cost-Latency",
+    "tradeoff_energy_latency": "Energy-Latency",
 }
-ORDER = ["Cost", "Energy", "QoE", "Balanced"]
+ORDER = ["Cost", "Energy", "Latency", "Cost-Energy", "Cost-Latency", "Energy-Latency"]
 
 
 def load_regret_dataframe() -> pd.DataFrame | None:

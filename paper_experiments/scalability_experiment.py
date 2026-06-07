@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Benchmark balanced-objective scalability across workload sizes and local SLMs.
+"""Benchmark cost-latency trade-off scalability across workload sizes and local SLMs.
 
 For each workload size and repetition, this script:
 1) generates a reproducible scalable workload;
-2) solves the balanced objective with fixed optimal parameters;
+2) solves the cost-latency trade-off objective with fixed target parameters;
 3) asks each configured local Ollama model to choose solve_allocation parameters;
 4) records objective regret, Ollama count fields / total token count, and timings; and
 5) writes raw JSON plus aggregate metric tables for plotting.
@@ -32,8 +32,8 @@ from regret_temperature_sweep import OPTIMAL_PARAMS, compute_regret
 WORKLOAD_SIZES = list(range(50, 1001, 50))
 N_REPS = 30
 TEMPERATURE = 0.0
-SCENARIO = "balanced"
-PROMPT = "Optimise this using all datacentres and balanced approach between cost, energy and latency."
+SCENARIO = "tradeoff_cost_latency"
+PROMPT = "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience."
 MODELS = [
     "llama3.2",
     "llama3.2:1b",
@@ -273,7 +273,7 @@ def generate_workload(workload_size: int, seed: int) -> float:
 
 
 async def run_scalability_experiment() -> None:
-    """Run balanced-objective scalability benchmarking for every size/model."""
+    """Run cost-latency trade-off scalability benchmarking for every size/model."""
     import ollama
 
     print(
