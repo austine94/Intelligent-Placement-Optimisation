@@ -28,20 +28,24 @@ TOLERANCE = 0.05  #allow small deviations
 # --- GROUND TRUTH RULES ---
 # These match the explicit logic you provided in the prompt.
 TARGETS = {
-    "focus_cost":    {"alpha": 0.0, "beta": 1.0},
-    "focus_energy":  {"alpha": 0.0, "beta": 0.0}, 
+    "focus_cost": {"alpha": 0.0, "beta": 1.0},
+    "focus_energy": {"alpha": 0.0, "beta": 0.0},
     "focus_latency": {"alpha": 1.0, "beta": 0.5},
-    "balanced":      {"alpha": 0.1, "beta": 0.5}
+    "tradeoff_cost_energy": {"alpha": 0.0, "beta": 0.5},
+    "tradeoff_cost_latency": {"alpha": 0.1, "beta": 1.0},
+    "tradeoff_energy_latency": {"alpha": 0.1, "beta": 0.0},
 }
 
 # Clean labels for the plot
 CATEGORY_MAP = {
     "focus_cost": "Cost",
     "focus_energy": "Energy",
-    "focus_latency": "QoE",
-    "balanced": "Balanced"
+    "focus_latency": "Latency",
+    "tradeoff_cost_energy": "Cost-Energy",
+    "tradeoff_cost_latency": "Cost-Latency",
+    "tradeoff_energy_latency": "Energy-Latency",
 }
-ORDER = ["Cost", "Energy", "QoE", "Balanced"]
+ORDER = ["Cost", "Energy", "Latency", "Cost-Energy", "Cost-Latency", "Energy-Latency"]
 
 def is_correct(actual, target):
     """Checks if the value matches the target within tolerance."""

@@ -117,10 +117,21 @@ def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str:
     Solves the facility location problem exactly.
     
     Args:
-        alpha: Float to penalise latency (QoE) in objective.
-        beta: Float between zero and one to balance between cost and energy. 
-            Using a beta of 0 emphasises energy only, 1 is cost only.
+        alpha: Float to penalise latency in the objective.
+            Use 0.0 to ignore latency, 0.1 for moderate latency trade-offs,
+            and 1.0 for latency-priority optimisation.
+        beta: Float between zero and one to balance financial cost and energy.
+            Use 1.0 for financial-cost priority, 0.0 for energy priority,
+            and 0.5 for cost-energy trade-offs.
         max_datacentres: Maximum number of facilities to open.
+
+    Canonical presets:
+        cost only: alpha=0.0, beta=1.0
+        energy only: alpha=0.0, beta=0.0
+        latency only: alpha=1.0, beta=0.5
+        cost-energy trade-off: alpha=0.0, beta=0.5
+        cost-latency trade-off: alpha=0.1, beta=1.0
+        energy-latency trade-off: alpha=0.1, beta=0.0
     """
     global LAST_SOLVED_INSTANCE
     
@@ -153,7 +164,7 @@ def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str:
             f"Metrics:\n"
             f"Financial Cost: ${metrics['total_financial_cost']}\n"
             f"Energy Usage:    {metrics['total_energy_score']} units\n"
-            f"Avg Latency (QoE):     {metrics['avg_latency']} ms\n"
+            f"Avg Latency:     {metrics['avg_latency']} ms\n"
             f"DCs Opened:      {num_open}\n"
             f"{warning}"
         )
@@ -165,7 +176,7 @@ def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str:
 def analyse_alpha_tradeoffs(max_datacentres: int, alphas: list | str, beta: float):
     """
     Runs a simulation across multiple alpha values 
-    to compare Cost vs Latency.
+    to compare cost and latency trade-offs.
     
     Args:
         max_datacentres: The limit on DCs 
@@ -227,14 +238,15 @@ def analyse_alpha_tradeoffs(max_datacentres: int, alphas: list | str, beta: floa
 def analyse_beta_tradeoffs(max_datacentres: int, betas: list | str, alpha: float = 1):
     """
     Runs a simulation across multiple beta values to compare
-    financial cost v energy usage.
+    financial cost vs energy usage.
     
     Args:
         max_datacentres: Hard limit on DCs.
         betas: List of beta values to test (e.g. [0.0, 0.2, 0.5, 0.8, 1.0]).
-               0.0 = Energy Optimised
-               1.0 = Financial Cost Optimised
-        alpha: fixed QoE penalty
+               0.0 = energy priority
+               0.5 = cost-energy trade-off
+               1.0 = financial-cost priority
+        alpha: fixed latency penalty
     """
     try:
         #as for alpha robust parsing for strings of json
@@ -308,7 +320,7 @@ def get_solution_metrics():
             f"--- SOLUTION BREAKDOWN ---\n"
             f"  Financial Cost: ${m['total_financial_cost']}\n"
             f"  Energy Usage:    {m['total_energy_score']} units\n"
-            f"  Avg Latency (QoE):     {m['avg_latency']} ms\n"
+            f"  Avg Latency:     {m['avg_latency']} ms\n"
             f"  DCs Opened:      {n_open}\n"
             f"  Consumers:       {m['consumers_served']}\n"
             f"--------------------------"

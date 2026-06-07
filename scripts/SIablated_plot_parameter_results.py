@@ -19,12 +19,14 @@ INPUT_FILE = "data/SIablated_parameter_choices.json"
 CATEGORY_MAP = {
     "focus_cost": "Cost",
     "focus_energy": "Energy",
-    "focus_latency": "QoE",
-    "balanced": "Balanced"
+    "focus_latency": "Latency",
+    "tradeoff_cost_energy": "Cost-Energy",
+    "tradeoff_cost_latency": "Cost-Latency",
+    "tradeoff_energy_latency": "Energy-Latency",
 }
 
 # Enforce consistent order on X-axis
-ORDER = ["Cost", "Energy", "QoE", "Balanced"]
+ORDER = ["Cost", "Energy", "Latency", "Cost-Energy", "Cost-Latency", "Energy-Latency"]
 
 def clean_val(val):
     """Helper to safely convert strings/nulls to floats."""
@@ -76,7 +78,7 @@ def plot_parameters():
     # Setup Style
     sns.set_theme(style="whitegrid")
 
-    # --- PLOT 1: ALPHA (QoE Weight) ---
+    # --- PLOT 1: ALPHA (Latency Weight) ---
     plt.figure(figsize=(8, 6))
     
     # Boxplot (Distribution summary)
@@ -91,7 +93,7 @@ def plot_parameters():
         hue="Strategy", palette="viridis", jitter=True, alpha=0.6, legend=False
     )
     
-    plt.xlabel("Priority", fontsize=12)
+    plt.xlabel("Scenario", fontsize=12)
     plt.ylabel("Alpha Value", fontsize=12)
     
     filename_alpha = "SIablated_parameter_consistency_alpha.png"
@@ -113,7 +115,7 @@ def plot_parameters():
         hue="Strategy", palette="magma", jitter=True, alpha=0.6, legend=False
     )
     
-    plt.xlabel("Priority", fontsize=12)
+    plt.xlabel("Scenario", fontsize=12)
     plt.ylabel("Beta Value (0=Green, 1=Cost)", fontsize=12)
     plt.ylim(-0.1, 1.1)  # Lock Y-axis since Beta is 0-1
     

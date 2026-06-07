@@ -18,10 +18,12 @@ EXPERIMENT_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "
 RESULTS_FILE = os.path.join(EXPERIMENT_DATA_DIR, "illustrative_experiment_results.json")
 
 TEST_PROMPTS = {
-    "focus_cost": "Optimise this using all datacentres. My absolute priority is minimising cost, regardless of QoE or energy usage.",
-    "focus_energy": "Optimise this using all datacentres. Minimise Energy usage above all else.",
-    "focus_latency": "Optimise this using all datacentres. We need the best possible user experience (QoE)",
-    "balanced": "Optimise this using all datacentres and balanced approach between cost, energy and latency."
+    "focus_cost": "Optimise this using all datacentres. My absolute priority is minimising cost, regardless of latency or energy usage.",
+    "focus_energy": "Optimise this using all datacentres. Minimise energy usage above all else.",
+    "focus_latency": "Optimise this using all datacentres. We need the lowest possible latency and best user experience.",
+    "tradeoff_cost_energy": "Optimise this using all datacentres. Balance financial cost and energy usage; latency is not the main priority.",
+    "tradeoff_cost_latency": "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience.",
+    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation, but do not let user experience become poor.",
 }
 
 # Paths
