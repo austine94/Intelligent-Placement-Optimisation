@@ -27,9 +27,8 @@ from parameter_selection_accuracy import (
 N_REPS = 80
 TEMPERATURE = 0.0
 MODELS = [
-    "llama3.2:latest",
-    "llama3.2:1b",
     "interstellarninja/llama3.1-8b-tools:latest",
+    "llama3.2:1b",
     "aratan/qwen3-4b-tools:latest",
     "lukaspetrik/gemma3-tools:4b",
 ]

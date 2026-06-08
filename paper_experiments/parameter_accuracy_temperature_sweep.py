@@ -25,7 +25,7 @@ from parameter_selection_accuracy import (
 
 # --- CONFIGURATION ---
 N_REPS = 80
-MODEL = "llama3.2"
+MODEL = "interstellarninja/llama3.1-8b-tools:latest"
 TEMPERATURES = [0.0, 0.2, 0.5, 0.7, 1.0]
 
 SCRIPT_DIR = Path(__file__).resolve().parent

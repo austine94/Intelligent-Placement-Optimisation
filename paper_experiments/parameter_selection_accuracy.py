@@ -17,7 +17,7 @@ TEST_PROMPTS = {
     "focus_latency": "Optimise this using all datacentres. We need the lowest possible latency and best user experience.",
     "tradeoff_cost_energy": "Optimise this using all datacentres. Balance financial cost and energy usage; latency is not the main priority.",
     "tradeoff_cost_latency": "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience.",
-    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation, but do not let user experience become poor.",
+    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation minimising energy, but do not let user experience become poor.",
 }
 
 SCENARIO_LABELS = {
