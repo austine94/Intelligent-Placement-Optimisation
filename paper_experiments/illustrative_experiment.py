@@ -13,7 +13,7 @@ from mcp.client.stdio import stdio_client
 
 # --- CONFIGURATION ---
 N_REPS = 80   #number of sim reps
-MODEL = "llama3.2"  # Ensure you have pulled this model: `ollama pull llama3.2`
+MODEL = "interstellarninja/llama3.1-8b-tools:latest"  # Ensure you have pulled this model: `ollama pull interstellarninja/llama3.1-8b-tools:latest`
 EXPERIMENT_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "experiment_data")
 RESULTS_FILE = os.path.join(EXPERIMENT_DATA_DIR, "illustrative_experiment_results.json")
 
@@ -23,7 +23,7 @@ TEST_PROMPTS = {
     "focus_latency": "Optimise this using all datacentres. We need the lowest possible latency and best user experience.",
     "tradeoff_cost_energy": "Optimise this using all datacentres. Balance financial cost and energy usage; latency is not the main priority.",
     "tradeoff_cost_latency": "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience.",
-    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation, but do not let user experience become poor.",
+    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation minimising energy, but do not let user experience become poor.",
 }
 
 # Paths

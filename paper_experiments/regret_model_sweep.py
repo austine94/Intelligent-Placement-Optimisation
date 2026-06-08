@@ -39,10 +39,10 @@ from regret_temperature_sweep import (
 N_REPS = 80
 TEMPERATURE = 0.0
 MODELS = [
-    "llama3.2:latest",
+    "interstellarninja/llama3.1-8b-tools:latest",
     "llama3.2:1b",
     "llama3:8b",
-    "qwen:4b",
+    "aratan/qwen3-4b-tools:latest",
     "lukaspetrik/gemma3-tools:4b",
 ]
 

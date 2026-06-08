@@ -20,7 +20,7 @@ from mcp.client.stdio import stdio_client
 
 # --- CONFIGURATION ---
 N_REPS = 80
-MODEL = "llama3.2"
+MODEL = "interstellarninja/llama3.1-8b-tools:latest"
 TEMPERATURES = [0.0, 0.2, 0.5, 0.7, 1.0]
 RESULTS_FILE = "data/benchmark_temp_sweep_results.json"
 
@@ -30,7 +30,7 @@ TEST_PROMPTS = {
     "focus_latency": "Optimise this using all datacentres. We need the lowest possible latency and best user experience.",
     "tradeoff_cost_energy": "Optimise this using all datacentres. Balance financial cost and energy usage; latency is not the main priority.",
     "tradeoff_cost_latency": "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience.",
-    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation, but do not let user experience become poor.",
+    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation minimising energy, but do not let user experience become poor.",
 }
 # Paths
 current_dir = os.path.dirname(os.path.abspath(__file__))

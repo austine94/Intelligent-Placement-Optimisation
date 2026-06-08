@@ -22,7 +22,7 @@ from mcp.client.stdio import stdio_client
 
 # --- CONFIGURATION ---
 N_REPS = 80
-MODEL = "llama3.2"
+MODEL = "interstellarninja/llama3.1-8b-tools:latest"
 TEMPERATURE = 0.7
 RESULTS_FILE = "data/benchmark_regret_results.json"
 
@@ -32,7 +32,7 @@ TEST_PROMPTS = {
     "focus_latency": "Optimise this using all datacentres. We need the lowest possible latency and best user experience.",
     "tradeoff_cost_energy": "Optimise this using all datacentres. Balance financial cost and energy usage; latency is not the main priority.",
     "tradeoff_cost_latency": "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience.",
-    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation, but do not let user experience become poor.",
+    "tradeoff_energy_latency": "Optimise this using all datacentres. Prefer a greener allocation minimising energy, but do not let user experience become poor.",
 }
 DETERMINISTIC_TARGET_PARAMS = {
     "focus_cost": {"alpha": 0.0, "beta": 1.0, "max_datacentres": 9999},

@@ -4,7 +4,7 @@
 
 For each generated world seed and prompt scenario, this script:
 1) solves the scenario with the fixed optimal parameters for that scenario;
-2) asks llama3.2 at temperature 0.0 to choose solve_allocation parameters;
+2) asks interstellarninja/llama3.1-8b-tools:latest at temperature 0.0 to choose solve_allocation parameters;
 3) chooses parameters with deterministic keyword and semantic classifiers;
 4) samples one random alpha/beta pair from the optimal-value grid;
 5) computes objective regret percentage relative to the fixed optimum; and
@@ -41,12 +41,12 @@ from regret_temperature_sweep import (  # noqa: E402
 
 # --- CONFIGURATION ---
 N_REPS = 80
-MODEL = "llama3.2"
+MODEL = "interstellarninja/llama3.1-8b-tools:latest"
 TEMPERATURE = 0.0
 MAX_DATACENTRES = 9999
 
 BASELINE_COLUMNS = [
-    "Agentic llama3.2 temp=0.0",
+    "Agentic interstellarninja/llama3.1-8b-tools:latest temp=0.0",
     "Keyword classifier",
     "Semantic classifier",
     "Random parameter selection",
