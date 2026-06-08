@@ -55,7 +55,7 @@ Run the regret temperature sweep with:
 python paper_experiments/regret_temperature_sweep.py
 ```
 
-This compares the six scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`, writes raw JSON results to `experiment_data/regret_temperature_sweep_results.json`, and writes average objective-regret percentage tables to:
+This compares the six scenarios across the temperature sweep `0.0, 0.25, 0.5, 0.75, 1.0`, writes raw JSON results to `experiment_data/regret_temperature_sweep_results.json`, and writes average objective-regret percentage tables to:
 
 - `experiment_data/regret_temperature_sweep_average_regret_table.csv`
 - `experiment_data/regret_temperature_sweep_average_regret_table.md`
@@ -81,7 +81,7 @@ Run the parameter-selection accuracy temperature sweep with:
 python paper_experiments/parameter_accuracy_temperature_sweep.py
 ```
 
-This compares the six scenarios across the temperature sweep `0.0, 0.2, 0.5, 0.7, 1.0`. A selected alpha or beta is counted as correct when it is within `±0.05` of the scenario target. Each repetition receives a combined alpha/beta score: `1.0` when both are correct, `0.5` when exactly one is correct, and `0.0` when neither is correct. The script writes raw JSON results to `experiment_data/parameter_accuracy_temperature_sweep_results.json`, and writes proportion-correct tables to:
+This compares the six scenarios across the temperature sweep `0.0, 0.25, 0.5, 0.75, 1.0`. A selected alpha or beta is counted as correct when it is within `±0.05` of the scenario target. Each repetition receives a combined alpha/beta score: `1.0` when both are correct, `0.5` when exactly one is correct, and `0.0` when neither is correct. The script writes raw JSON results to `experiment_data/parameter_accuracy_temperature_sweep_results.json`, and writes proportion-correct tables to:
 
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.md`
