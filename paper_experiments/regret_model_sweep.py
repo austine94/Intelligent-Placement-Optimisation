@@ -39,11 +39,11 @@ from regret_temperature_sweep import (
 N_REPS = 80
 TEMPERATURE = 0.0
 MODELS = [
-    "llama3.2",
+    "llama3.2:latest",
     "llama3.2:1b",
-    "llama3.1:8b",
-    "qwen3:4b",
-    "gemma3:4b",
+    "llama3:8b",
+    "qwen:4b",
+    "lukaspetrik/gemma3-tools:4b",
 ]
 
 PROJECT_ROOT = SCRIPT_DIR.parent
