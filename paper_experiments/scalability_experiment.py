@@ -35,11 +35,11 @@ TEMPERATURE = 0.0
 SCENARIO = "tradeoff_cost_latency"
 PROMPT = "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience."
 MODELS = [
-    "llama3.2",
+    "llama3.2:latest",
     "llama3.2:1b",
-    "llama3.1:8b",
-    "qwen3:4b",
-    "gemma3:4b",
+    "llama3:8b",
+    "qwen:4b",
+    "lukaspetrik/gemma3-tools:4b",
 ]
 N_DATACENTRES = 5
 N_HOTSPOTS = 5

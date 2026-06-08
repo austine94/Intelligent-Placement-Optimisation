@@ -21,11 +21,11 @@ PLOTS_DIR = SCRIPT_DIR / "paper_plots"
 RESULTS_FILE = EXPERIMENT_DATA_DIR / "scalability_experiment_results.json"
 
 MODEL_COLOURS: dict[str, tuple[float, float, float]] = {
-    "llama3.2": (0.12, 0.47, 0.71),
+    "llama3.2:latest": (0.12, 0.47, 0.71),
     "llama3.2:1b": (1.00, 0.50, 0.05),
-    "llama3.1:8b": (0.17, 0.63, 0.17),
-    "qwen3:4b": (0.84, 0.15, 0.16),
-    "gemma3:4b": (0.58, 0.40, 0.74),
+    "llama3:8b": (0.17, 0.63, 0.17),
+    "qwen:4b": (0.84, 0.15, 0.16),
+    "lukaspetrik/gemma3-tools:4b": (0.58, 0.40, 0.74),
 }
 
 PLOTS = [
