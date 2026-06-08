@@ -29,8 +29,8 @@ TEMPERATURE = 0.0
 MODELS = [
     "llama3.2:latest",
     "llama3.2:1b",
-    "llama3:8b",
-    "qwen:4b",
+    "interstellarninja/llama3.1-8b-tools:latest",
+    "aratan/qwen3-4b-tools:latest",
     "lukaspetrik/gemma3-tools:4b",
 ]
 
