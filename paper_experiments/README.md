@@ -94,7 +94,7 @@ Run the parameter-selection accuracy model sweep with:
 python paper_experiments/parameter_accuracy_model_sweep.py
 ```
 
-This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. It uses the same `±0.05` parameter tolerance and combined alpha/beta repetition score as the temperature sweep. The script writes raw JSON results to `experiment_data/parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
+This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. It uses the same `±0.05` parameter tolerance and combined alpha/beta repetition score as the temperature sweep. The script writes raw JSON results to `experiment_data/parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
 
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`

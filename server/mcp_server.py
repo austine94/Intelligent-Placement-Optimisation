@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import contextlib
+from typing import Any
 
 #SETUP PATHS 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +24,30 @@ DATA_PATH = os.path.join(project_root, "data", "current_problem.json")
 
 #STORE LAST SOLVED INSTANCE
 LAST_SOLVED_INSTANCE = None
+
+DEFAULT_MAX_DATACENTRES = 9999
+
+
+def normalise_max_datacentres(value: Any) -> int:
+    """Return a safe datacentre limit, defaulting invalid tool inputs to 9999."""
+    if value is None or isinstance(value, bool):
+        return DEFAULT_MAX_DATACENTRES
+
+    try:
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return DEFAULT_MAX_DATACENTRES
+            parsed = float(value)
+        else:
+            parsed = float(value)
+
+        if not np.isfinite(parsed) or parsed < 0:
+            return DEFAULT_MAX_DATACENTRES
+
+        return int(parsed)
+    except (TypeError, ValueError):
+        return DEFAULT_MAX_DATACENTRES
 
 def load_problem_into_instance():
     """
@@ -112,7 +137,11 @@ def get_problem_status() -> str:
     return f"Current Scenario: {data['n_consumers']} Viewers, {data['n_datacentres']} Data Centres available."
 
 @mcp.tool()
-def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str: 
+def solve_allocation(
+    alpha: float,
+    beta: float,
+    max_datacentres: Any = DEFAULT_MAX_DATACENTRES,
+) -> str:
     """
     Solves the facility location problem exactly.
     
@@ -123,7 +152,8 @@ def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str:
         beta: Float between zero and one to balance financial cost and energy.
             Use 1.0 for financial-cost priority, 0.0 for energy priority,
             and 0.5 for cost-energy trade-offs.
-        max_datacentres: Maximum number of facilities to open.
+        max_datacentres: Maximum number of facilities to open. Invalid or missing
+            values default to 9999.
 
     Canonical presets:
         cost only: alpha=0.0, beta=1.0
@@ -136,6 +166,7 @@ def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str:
     global LAST_SOLVED_INSTANCE
     
     try:
+        max_datacentres = normalise_max_datacentres(max_datacentres)
         inst = load_problem_into_instance()
         
         #solve and save. Suppress stdout because MCP stdio must only emit JSON-RPC.
@@ -173,16 +204,17 @@ def solve_allocation(alpha: float, beta: float, max_datacentres: int) -> str:
         return f"Error running optimization: {str(e)}"
     
 @mcp.tool()
-def analyse_alpha_tradeoffs(max_datacentres: int, alphas: list | str, beta: float):
+def analyse_alpha_tradeoffs(max_datacentres: Any, alphas: list | str, beta: float):
     """
     Runs a simulation across multiple alpha values 
     to compare cost and latency trade-offs.
     
     Args:
-        max_datacentres: The limit on DCs 
+        max_datacentres: The limit on DCs. Invalid or missing values default to 9999.
         alpha_vec: A list of alpha values to tru
     """
     try:
+        max_datacentres = normalise_max_datacentres(max_datacentres)
         #when the model sends a string that shoulkd be a list, e.g. "[0.1, 0.2]", 
         #parse it into a real list
         if isinstance(alphas, str):
@@ -235,13 +267,13 @@ def analyse_alpha_tradeoffs(max_datacentres: int, alphas: list | str, beta: floa
         return f"Error running analysis: {str(e)}"    
     
 @mcp.tool()
-def analyse_beta_tradeoffs(max_datacentres: int, betas: list | str, alpha: float = 1):
+def analyse_beta_tradeoffs(max_datacentres: Any, betas: list | str, alpha: float = 1):
     """
     Runs a simulation across multiple beta values to compare
     financial cost vs energy usage.
     
     Args:
-        max_datacentres: Hard limit on DCs.
+        max_datacentres: Hard limit on DCs. Invalid or missing values default to 9999.
         betas: List of beta values to test (e.g. [0.0, 0.2, 0.5, 0.8, 1.0]).
                0.0 = energy priority
                0.5 = cost-energy trade-off
@@ -249,6 +281,7 @@ def analyse_beta_tradeoffs(max_datacentres: int, betas: list | str, alpha: float
         alpha: fixed latency penalty
     """
     try:
+        max_datacentres = normalise_max_datacentres(max_datacentres)
         #as for alpha robust parsing for strings of json
         if isinstance(betas, str):
             try:
