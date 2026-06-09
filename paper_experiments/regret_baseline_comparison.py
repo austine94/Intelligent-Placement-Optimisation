@@ -12,7 +12,8 @@ For each generated world seed and prompt scenario, this script:
 6) falls back to the keyword classifier when the agentic tool call fails, so the
    agentic baseline still yields a regret value for this experiment;
 7) computes metric-wise absolute percentage regret for cost, energy, and latency relative to the fixed optimum; and
-8) writes both raw JSON results and average-regret tables.
+8) records whether each baseline selected the target alpha/beta parameters; and
+9) writes raw JSON results plus average-regret and parameter-accuracy tables.
 """
 
 from __future__ import annotations
@@ -32,6 +33,13 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from parameter_selection_accuracy import (  # noqa: E402
+    build_accuracy_table,
+    print_accuracy_table,
+    score_parameter_selection,
+    write_accuracy_table_csv,
+    write_accuracy_table_markdown,
+)
 from regret_temperature_sweep import (  # noqa: E402
     OPTIMAL_PARAMS,
     SCENARIO_LABELS,
@@ -64,6 +72,8 @@ EXPERIMENT_DATA_DIR = SCRIPT_DIR / "experiment_data"
 RESULTS_FILE = EXPERIMENT_DATA_DIR / "regret_baseline_comparison_results.json"
 REGRET_TABLE_CSV = EXPERIMENT_DATA_DIR / "regret_baseline_comparison_average_regret_table.csv"
 REGRET_TABLE_MD = EXPERIMENT_DATA_DIR / "regret_baseline_comparison_average_regret_table.md"
+ACCURACY_TABLE_CSV = EXPERIMENT_DATA_DIR / "regret_baseline_comparison_parameter_accuracy_table.csv"
+ACCURACY_TABLE_MD = EXPERIMENT_DATA_DIR / "regret_baseline_comparison_parameter_accuracy_table.md"
 
 SERVER_SCRIPT = PROJECT_ROOT / "server" / "mcp_server.py"
 GENERATOR_SCRIPT = PROJECT_ROOT / "scripts" / "generate_scenario.py"
@@ -181,6 +191,19 @@ def print_regret_table(table_rows: list[dict[str, str]]) -> None:
     print("-+-".join("-" * width for width in widths))
     for row in rows:
         print(format_row(row))
+
+
+def score_record_parameter_selection(
+    record: dict[str, Any],
+    scenario: str,
+    selected_args: dict[str, Any] | None,
+) -> None:
+    """Store alpha/beta correctness for the parameters actually selected by a baseline.
+
+    Agentic failures are scored as incorrect rather than scoring the keyword fallback that
+    is used solely to keep the regret comparison table complete.
+    """
+    record.update(score_parameter_selection(scenario, selected_args))
 
 
 def prompt_generation_seed(rep: int, scenario: str) -> int:
@@ -318,6 +341,8 @@ async def evaluate_parameter_baseline(
     if sample_index is not None:
         record["sample_index"] = sample_index
 
+    score_record_parameter_selection(record, scenario, selected_params)
+
     if record.get("optimal_objective") is None:
         record["error"] = record.get("error", "Could not parse optimal objective")
         return record
@@ -362,6 +387,9 @@ async def apply_agent_keyword_fallback(
     record["agent_tool_call_failure_reason"] = reason
     record["fallback_used"] = True
     record["fallback_baseline"] = "Keyword classifier"
+
+    if record.get("parameter_selection_score") is None:
+        score_record_parameter_selection(record, record["prompt_category"], None)
 
     fallback_params = keyword_classifier(prompt)
     record["fallback_tool_args"] = fallback_params
@@ -413,6 +441,7 @@ async def evaluate_agentic_baseline(
     }
 
     if record.get("optimal_objective") is None:
+        score_record_parameter_selection(record, scenario, None)
         record["error"] = record.get("error", "Could not parse optimal objective")
         return record
 
@@ -440,6 +469,7 @@ async def evaluate_agentic_baseline(
         agent_fn_name = tool_call["function"]["name"]
         agent_fn_args = tool_call["function"]["arguments"]
         record["agent_tool_args"] = agent_fn_args
+        score_record_parameter_selection(record, scenario, agent_fn_args)
 
         if agent_fn_name != "solve_allocation":
             return await apply_agent_keyword_fallback(
@@ -607,14 +637,21 @@ async def run_regret_baseline_comparison() -> None:
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
         json.dump(results_db, f, indent=2)
 
-    table_rows = build_average_regret_table(results_db)
-    write_regret_table_csv(table_rows)
-    write_regret_table_markdown(table_rows)
-    print_regret_table(table_rows)
+    regret_table_rows = build_average_regret_table(results_db)
+    write_regret_table_csv(regret_table_rows)
+    write_regret_table_markdown(regret_table_rows)
+    print_regret_table(regret_table_rows)
+
+    accuracy_table_rows = build_accuracy_table(results_db, BASELINE_COLUMNS)
+    write_accuracy_table_csv(accuracy_table_rows, BASELINE_COLUMNS, ACCURACY_TABLE_CSV)
+    write_accuracy_table_markdown(accuracy_table_rows, BASELINE_COLUMNS, ACCURACY_TABLE_MD)
+    print_accuracy_table(accuracy_table_rows, BASELINE_COLUMNS)
 
     print(f"\n✅ Regret baseline comparison complete. Results saved to {RESULTS_FILE}")
     print(f"✅ Average absolute regret table CSV saved to {REGRET_TABLE_CSV}")
     print(f"✅ Average absolute regret table Markdown saved to {REGRET_TABLE_MD}")
+    print(f"✅ Parameter-selection accuracy table CSV saved to {ACCURACY_TABLE_CSV}")
+    print(f"✅ Parameter-selection accuracy table Markdown saved to {ACCURACY_TABLE_MD}")
 
 
 if __name__ == "__main__":
