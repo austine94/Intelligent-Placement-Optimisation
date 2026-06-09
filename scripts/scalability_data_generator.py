@@ -19,6 +19,7 @@ if str(ENGINE_PATH) not in sys.path:
     sys.path.append(str(ENGINE_PATH))
 
 from flexmedia_delivery_instance import flexmedia_delivery_instance
+from data_normalisation import normalise_generated_problem_data
 
 DEFAULT_OUTPUT_PATH = PROJECT_ROOT / "data" / "current_problem.json"
 
@@ -100,6 +101,8 @@ def generate_scalability_problem(
         "consumer_latencies": inst.consumer_latencies.tolist(),
         "energy_costs": inst.energy_costs.tolist(),
     }
+
+    data = normalise_generated_problem_data(data)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as f:

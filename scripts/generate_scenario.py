@@ -15,6 +15,7 @@ if engine_path not in sys.path:
     sys.path.append(engine_path)                          # Add to python path
 
 from flexmedia_delivery_instance import flexmedia_delivery_instance
+from data_normalisation import normalise_generated_problem_data
 
 #config
 n_datacentres = 5
@@ -76,6 +77,8 @@ if __name__ == "__main__":
         'consumer_latencies': inst.consumer_latencies.tolist(),
         'energy_costs': inst.energy_costs.tolist() 
     }
+
+    data = normalise_generated_problem_data(data)
 
     #check if path exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
