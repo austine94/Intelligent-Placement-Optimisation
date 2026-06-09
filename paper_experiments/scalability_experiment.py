@@ -6,7 +6,7 @@ For each workload size and repetition, this script:
 1) generates a reproducible scalable workload;
 2) solves the cost-latency trade-off objective with fixed target parameters;
 3) asks each configured local Ollama model to choose solve_allocation parameters;
-4) records signed objective regret, absolute percentage regret, Ollama count fields / total token count, and timings; and
+4) records metric-wise absolute percentage regret, Ollama count fields / total token count, and timings; and
 5) writes raw JSON plus aggregate metric tables for plotting.
 """
 
@@ -26,7 +26,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.append(str(SCRIPT_DIR))
 
 from parameter_selection_accuracy import TOOL_DEFINITION
-from regret_temperature_sweep import OPTIMAL_PARAMS, compute_regret, objective_regret_percent_for_summary
+from regret_temperature_sweep import OPTIMAL_PARAMS, compute_regret, metric_regret_percent_for_summary
 
 # --- CONFIGURATION ---
 WORKLOAD_SIZES = list(range(50, 1001, 50))
@@ -189,7 +189,7 @@ def build_average_metrics_table(results: dict[str, Any]) -> list[dict[str, str]]
     """Create aggregate metric rows by workload size and model."""
     table_rows: list[dict[str, str]] = []
     metrics = [
-        "objective_regret_percent",
+        "metric_regret_percent",
         "total_token_count",
         "agent_end_to_end_seconds",
         "total_case_seconds",
@@ -201,11 +201,11 @@ def build_average_metrics_table(results: dict[str, Any]) -> list[dict[str, str]]
             runs = results.get(size_key, {}).get(model, [])
             row = {"workload_size": size_key, "model": model}
             for metric in metrics:
-                if metric == "objective_regret_percent":
+                if metric == "metric_regret_percent":
                     values = [
                         regret_percent
                         for run in runs
-                        if (regret_percent := objective_regret_percent_for_summary(run)) is not None
+                        if (regret_percent := metric_regret_percent_for_summary(run)) is not None
                     ]
                 else:
                     values = [float(run[metric]) for run in runs if run.get(metric) is not None]
@@ -221,7 +221,7 @@ def write_metrics_table_csv(table_rows: list[dict[str, str]]) -> None:
     fieldnames = [
         "workload_size",
         "model",
-        "average_objective_regret_percent",
+        "average_metric_regret_percent",
         "average_total_token_count",
         "average_agent_end_to_end_seconds",
         "average_total_case_seconds",
@@ -237,7 +237,7 @@ def write_metrics_table_markdown(table_rows: list[dict[str, str]]) -> None:
     headers = [
         "Workload size",
         "Model",
-        "Avg absolute regret (%)",
+        "Avg metric-wise regret (%)",
         "Avg tokens",
         "Avg agent e2e (s)",
         "Avg total case (s)",
@@ -245,7 +245,7 @@ def write_metrics_table_markdown(table_rows: list[dict[str, str]]) -> None:
     keys = [
         "workload_size",
         "model",
-        "average_objective_regret_percent",
+        "average_metric_regret_percent",
         "average_total_token_count",
         "average_agent_end_to_end_seconds",
         "average_total_case_seconds",
@@ -441,10 +441,17 @@ async def run_scalability_experiment() -> None:
                     if agent_objective is None:
                         record["error"] = "Could not evaluate agent solution objective"
                     else:
-                        record.update(compute_regret(agent_objective, optimal_objective))
+                        record.update(
+                            compute_regret(
+                                agent_metrics,
+                                optimal_metrics,
+                                agent_objective,
+                                optimal_objective,
+                            )
+                        )
 
                     results_db[size_key][model].append(record)
-                    regret = record.get("objective_regret_percent")
+                    regret = record.get("metric_regret_percent")
                     tokens = record.get("total_token_count")
                     print(
                         f" ✅ regret={regret if regret is not None else 'NA'}%, "
