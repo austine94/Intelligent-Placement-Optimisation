@@ -5,7 +5,7 @@
 For each generated world seed and prompt scenario, this script:
 1) solves the scenario with the fixed optimal parameters for that scenario;
 2) asks each configured local Ollama model to choose solve_allocation parameters;
-3) computes objective regret percentage relative to the fixed optimum; and
+3) computes absolute objective regret percentage relative to the fixed optimum; and
 4) writes both raw JSON results and average-regret tables.
 """
 
@@ -32,6 +32,7 @@ from regret_temperature_sweep import (
     average,
     call_solve_allocation,
     compute_regret,
+    objective_regret_percent_for_summary,
 )
 
 
@@ -41,7 +42,7 @@ TEMPERATURE = 0.0
 MODELS = [
     "interstellarninja/llama3.1-8b-tools:latest",
     "llama3.2:1b",
-    "llama3:8b",
+    "llama3.2:latest",
     "aratan/qwen3-4b-tools:latest",
     "lukaspetrik/gemma3-tools:4b",
 ]
@@ -65,9 +66,9 @@ def build_average_regret_table(results: dict[str, Any]) -> list[dict[str, str]]:
         for model in MODELS:
             runs = results.get(model, {}).get(scenario, [])
             regrets = [
-                float(run["objective_regret_percent"])
+                regret_percent
                 for run in runs
-                if run.get("objective_regret_percent") is not None
+                if (regret_percent := objective_regret_percent_for_summary(run)) is not None
             ]
             avg_regret = average(regrets)
             row[model] = "" if avg_regret is None else f"{avg_regret:.4f}"
@@ -77,7 +78,7 @@ def build_average_regret_table(results: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def write_regret_table_csv(table_rows: list[dict[str, str]]) -> None:
-    """Write the average regret percentage table as CSV."""
+    """Write the average absolute regret percentage table as CSV."""
     fieldnames = ["scenario", *MODELS]
     with REGRET_TABLE_CSV.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -86,7 +87,7 @@ def write_regret_table_csv(table_rows: list[dict[str, str]]) -> None:
 
 
 def write_regret_table_markdown(table_rows: list[dict[str, str]]) -> None:
-    """Write the average regret percentage table as Markdown for quick viewing."""
+    """Write the average absolute regret percentage table as Markdown for quick viewing."""
     headers = ["Scenario", *MODELS]
     lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
 
@@ -98,7 +99,7 @@ def write_regret_table_markdown(table_rows: list[dict[str, str]]) -> None:
 
 
 def print_regret_table(table_rows: list[dict[str, str]]) -> None:
-    """Print the average regret percentage table to stdout."""
+    """Print the average absolute regret percentage table to stdout."""
     headers = ["Scenario", *MODELS]
     rows = [[row["scenario"], *[row[model] for model in MODELS]] for row in table_rows]
     widths = [len(header) for header in headers]
@@ -110,7 +111,7 @@ def print_regret_table(table_rows: list[dict[str, str]]) -> None:
     def format_row(values: list[str]) -> str:
         return " | ".join(value.ljust(widths[index]) for index, value in enumerate(values))
 
-    print("\nAverage objective regret percentage from optimum:")
+    print("\nAverage absolute objective regret percentage from optimum:")
     print(format_row(headers))
     print("-+-".join("-" * width for width in widths))
     for row in rows:
@@ -267,8 +268,8 @@ async def run_regret_model_sweep() -> None:
     print_regret_table(table_rows)
 
     print(f"\n✅ Regret model sweep complete. Results saved to {RESULTS_FILE}")
-    print(f"✅ Average regret table CSV saved to {REGRET_TABLE_CSV}")
-    print(f"✅ Average regret table Markdown saved to {REGRET_TABLE_MD}")
+    print(f"✅ Average absolute regret table CSV saved to {REGRET_TABLE_CSV}")
+    print(f"✅ Average absolute regret table Markdown saved to {REGRET_TABLE_MD}")
 
 
 if __name__ == "__main__":

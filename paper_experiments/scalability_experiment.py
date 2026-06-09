@@ -6,7 +6,7 @@ For each workload size and repetition, this script:
 1) generates a reproducible scalable workload;
 2) solves the cost-latency trade-off objective with fixed target parameters;
 3) asks each configured local Ollama model to choose solve_allocation parameters;
-4) records objective regret, Ollama count fields / total token count, and timings; and
+4) records signed objective regret, absolute percentage regret, Ollama count fields / total token count, and timings; and
 5) writes raw JSON plus aggregate metric tables for plotting.
 """
 
@@ -26,7 +26,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.append(str(SCRIPT_DIR))
 
 from parameter_selection_accuracy import TOOL_DEFINITION
-from regret_temperature_sweep import OPTIMAL_PARAMS, compute_regret
+from regret_temperature_sweep import OPTIMAL_PARAMS, compute_regret, objective_regret_percent_for_summary
 
 # --- CONFIGURATION ---
 WORKLOAD_SIZES = list(range(50, 1001, 50))
@@ -201,7 +201,14 @@ def build_average_metrics_table(results: dict[str, Any]) -> list[dict[str, str]]
             runs = results.get(size_key, {}).get(model, [])
             row = {"workload_size": size_key, "model": model}
             for metric in metrics:
-                values = [float(run[metric]) for run in runs if run.get(metric) is not None]
+                if metric == "objective_regret_percent":
+                    values = [
+                        regret_percent
+                        for run in runs
+                        if (regret_percent := objective_regret_percent_for_summary(run)) is not None
+                    ]
+                else:
+                    values = [float(run[metric]) for run in runs if run.get(metric) is not None]
                 avg_value = average(values)
                 row[f"average_{metric}"] = "" if avg_value is None else f"{avg_value:.6f}"
             table_rows.append(row)
@@ -230,7 +237,7 @@ def write_metrics_table_markdown(table_rows: list[dict[str, str]]) -> None:
     headers = [
         "Workload size",
         "Model",
-        "Avg regret (%)",
+        "Avg absolute regret (%)",
         "Avg tokens",
         "Avg agent e2e (s)",
         "Avg total case (s)",
