@@ -14,7 +14,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.append(str(SCRIPT_DIR))
 
-from regret_temperature_sweep import objective_regret_percent_for_summary
+from regret_temperature_sweep import metric_regret_percent_for_summary
 from scalability_experiment import MODELS, WORKLOAD_SIZES, average
 
 EXPERIMENT_DATA_DIR = SCRIPT_DIR / "experiment_data"
@@ -31,8 +31,8 @@ MODEL_COLOURS: dict[str, tuple[float, float, float]] = {
 
 PLOTS = [
     {
-        "metric": "objective_regret_percent",
-        "title": "Average absolute objective regret by workload size",
+        "metric": "metric_regret_percent",
+        "title": "Average metric-wise absolute regret by workload size",
         "ylabel": "Average absolute regret (%)",
         "output": "scalability_average_regret.pdf",
     },
@@ -174,11 +174,11 @@ def aggregate_metric(
         size_key = str(workload_size)
         for model in MODELS:
             runs = results.get(size_key, {}).get(model, [])
-            if metric == "objective_regret_percent":
+            if metric == "metric_regret_percent":
                 values = [
                     regret_percent
                     for run in runs
-                    if (regret_percent := objective_regret_percent_for_summary(run)) is not None
+                    if (regret_percent := metric_regret_percent_for_summary(run)) is not None
                 ]
             else:
                 values = [float(run[metric]) for run in runs if run.get(metric) is not None]

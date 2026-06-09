@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Benchmark objective regret across scenarios for a local SLM model sweep.
+"""Benchmark metric-wise regret across scenarios for a local SLM model sweep.
 
 For each generated world seed and prompt scenario, this script:
 1) solves the scenario with the fixed optimal parameters for that scenario;
 2) asks each configured local Ollama model to choose solve_allocation parameters;
-3) computes absolute objective regret percentage relative to the fixed optimum; and
+3) computes metric-wise absolute percentage regret for cost, energy, and latency relative to the fixed optimum; and
 4) writes both raw JSON results and average-regret tables.
 """
 
@@ -32,7 +32,7 @@ from regret_temperature_sweep import (
     average,
     call_solve_allocation,
     compute_regret,
-    objective_regret_percent_for_summary,
+    metric_regret_percent_for_summary,
 )
 
 
@@ -68,7 +68,7 @@ def build_average_regret_table(results: dict[str, Any]) -> list[dict[str, str]]:
             regrets = [
                 regret_percent
                 for run in runs
-                if (regret_percent := objective_regret_percent_for_summary(run)) is not None
+                if (regret_percent := metric_regret_percent_for_summary(run)) is not None
             ]
             avg_regret = average(regrets)
             row[model] = "" if avg_regret is None else f"{avg_regret:.4f}"
@@ -111,7 +111,7 @@ def print_regret_table(table_rows: list[dict[str, str]]) -> None:
     def format_row(values: list[str]) -> str:
         return " | ".join(value.ljust(widths[index]) for index, value in enumerate(values))
 
-    print("\nAverage absolute objective regret percentage from optimum:")
+    print("\nAverage metric-wise absolute regret percentage from optimum:")
     print(format_row(headers))
     print("-+-".join("-" * width for width in widths))
     for row in rows:
@@ -249,7 +249,14 @@ async def run_regret_model_sweep() -> None:
                                 print(" ⚠️ Missing objective")
                                 continue
 
-                            record.update(compute_regret(agent_objective, record["optimal_objective"]))
+                            record.update(
+                                compute_regret(
+                                    agent_metrics,
+                                    record["optimal_metrics"],
+                                    agent_objective,
+                                    record["optimal_objective"],
+                                )
+                            )
                             results_db[model][scenario].append(record)
                             print(" ✅")
 

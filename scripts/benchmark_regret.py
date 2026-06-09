@@ -6,7 +6,7 @@ Benchmark agent regret against a deterministic baseline solve.
 For each generated world seed and prompt scenario:
 1) Run the agent-style tool selection via ollama + MCP tools.
 2) Run a deterministic baseline solve with fixed target parameters for that scenario.
-3) Compute signed objective regret and absolute percentage regret using objective values.
+3) Compute metric-wise absolute percentage regret for cost, energy, and latency.
 """
 
 import asyncio
@@ -76,10 +76,55 @@ def parse_objective_from_text(text_output: str) -> float | None:
         return None
 
 
-def compute_regret(agent_obj: float, baseline_obj: float) -> Dict[str, float | None]:
-    regret_abs = agent_obj - baseline_obj
-    regret_pct = None if baseline_obj == 0 else (abs(regret_abs) / abs(baseline_obj)) * 100.0
-    return {"objective_regret_absolute": regret_abs, "objective_regret_percent": regret_pct}
+METRIC_REGRET_KEYS = ("cost", "energy", "latency")
+
+
+def metric_absolute_percentage_regret(
+    agent_metrics: Dict[str, float],
+    baseline_metrics: Dict[str, float],
+    metric: str,
+) -> float | None:
+    agent_value = agent_metrics.get(metric)
+    baseline_value = baseline_metrics.get(metric)
+    if agent_value is None or baseline_value is None or baseline_value == 0:
+        return None
+    return (abs(agent_value - baseline_value) / abs(baseline_value)) * 100.0
+
+
+def compute_regret(
+    agent_metrics: Dict[str, float],
+    baseline_metrics: Dict[str, float],
+    agent_obj: float | None = None,
+    baseline_obj: float | None = None,
+) -> Dict[str, float | None]:
+    metric_regrets = {
+        f"{metric}_regret_percent": metric_absolute_percentage_regret(
+            agent_metrics,
+            baseline_metrics,
+            metric,
+        )
+        for metric in METRIC_REGRET_KEYS
+    }
+    available_metric_regrets = [value for value in metric_regrets.values() if value is not None]
+    metric_regret_percent = (
+        sum(available_metric_regrets) / len(available_metric_regrets)
+        if len(available_metric_regrets) == len(METRIC_REGRET_KEYS)
+        else None
+    )
+
+    objective_regret_absolute = None
+    objective_regret_percent = None
+    if agent_obj is not None and baseline_obj is not None:
+        objective_regret_absolute = agent_obj - baseline_obj
+        if baseline_obj != 0:
+            objective_regret_percent = (abs(objective_regret_absolute) / abs(baseline_obj)) * 100.0
+
+    return {
+        **metric_regrets,
+        "metric_regret_percent": metric_regret_percent,
+        "objective_regret_absolute": objective_regret_absolute,
+        "objective_regret_percent": objective_regret_percent,
+    }
 
 
 async def run_regret_benchmark() -> None:
@@ -188,7 +233,14 @@ async def run_regret_benchmark() -> None:
                         print(" ⚠️ Missing objective")
                         continue
 
-                    record.update(compute_regret(agent_obj, baseline_obj))
+                    record.update(
+                        compute_regret(
+                            record["agent_metrics"],
+                            record["baseline_metrics"],
+                            agent_obj,
+                            baseline_obj,
+                        )
+                    )
                     results_db[category].append(record)
                     print(" ✅")
 

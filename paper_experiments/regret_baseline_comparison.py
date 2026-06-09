@@ -11,7 +11,7 @@ For each generated world seed and prompt scenario, this script:
 5) samples one random alpha/beta pair from the optimal-value grid;
 6) falls back to the keyword classifier when the agentic tool call fails, so the
    agentic baseline still yields a regret value for this experiment;
-7) computes absolute objective regret percentage relative to the fixed optimum; and
+7) computes metric-wise absolute percentage regret for cost, energy, and latency relative to the fixed optimum; and
 8) writes both raw JSON results and average-regret tables.
 """
 
@@ -40,7 +40,7 @@ from regret_temperature_sweep import (  # noqa: E402
     average,
     call_solve_allocation,
     compute_regret,
-    objective_regret_percent_for_summary,
+    metric_regret_percent_for_summary,
 )
 
 
@@ -133,7 +133,7 @@ def build_average_regret_table(results: dict[str, Any]) -> list[dict[str, str]]:
             regrets = [
                 regret_percent
                 for run in runs
-                if (regret_percent := objective_regret_percent_for_summary(run)) is not None
+                if (regret_percent := metric_regret_percent_for_summary(run)) is not None
             ]
             avg_regret = average(regrets)
             row[baseline] = "" if avg_regret is None else f"{avg_regret:.4f}"
@@ -176,7 +176,7 @@ def print_regret_table(table_rows: list[dict[str, str]]) -> None:
     def format_row(values: list[str]) -> str:
         return " | ".join(value.ljust(widths[index]) for index, value in enumerate(values))
 
-    print("\nAverage absolute objective regret percentage from optimum:")
+    print("\nAverage metric-wise absolute regret percentage from optimum:")
     print(format_row(headers))
     print("-+-".join("-" * width for width in widths))
     for row in rows:
@@ -331,7 +331,14 @@ async def evaluate_parameter_baseline(
             record["error"] = "Could not parse selected objective"
             return record
 
-        record.update(compute_regret(selected_objective, record["optimal_objective"]))
+        record.update(
+            compute_regret(
+                selected_metrics,
+                record["optimal_metrics"],
+                selected_objective,
+                record["optimal_objective"],
+            )
+        )
         return record
     except Exception as exc:
         record["error"] = f"Parameter baseline error: {exc}"
@@ -368,7 +375,14 @@ async def apply_agent_keyword_fallback(
             record["error"] = "Keyword fallback could not parse selected objective"
             return record
 
-        record.update(compute_regret(fallback_objective, record["optimal_objective"]))
+        record.update(
+            compute_regret(
+                fallback_metrics,
+                record["optimal_metrics"],
+                fallback_objective,
+                record["optimal_objective"],
+            )
+        )
         return record
     except Exception as exc:
         record["error"] = f"Keyword fallback error after agent failure ({reason}): {exc}"
@@ -442,7 +456,14 @@ async def evaluate_agentic_baseline(
         if agent_objective is None:
             return await apply_agent_keyword_fallback(session, record, prompt, "Could not parse agent objective")
 
-        record.update(compute_regret(agent_objective, record["optimal_objective"]))
+        record.update(
+            compute_regret(
+                agent_metrics,
+                record["optimal_metrics"],
+                agent_objective,
+                record["optimal_objective"],
+            )
+        )
         return record
     except Exception as exc:
         return await apply_agent_keyword_fallback(session, record, prompt, f"Agent run error: {exc}")
@@ -536,7 +557,7 @@ async def run_regret_baseline_comparison() -> None:
                         prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[0]][scenario].append(agent_record)
-                    if agent_record.get("objective_regret_percent") is None:
+                    if agent_record.get("metric_regret_percent") is None:
                         print(" ❌")
                     elif agent_record.get("fallback_used"):
                         print(" ⚠️ keyword fallback")
@@ -554,7 +575,7 @@ async def run_regret_baseline_comparison() -> None:
                         prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[1]][scenario].append(keyword_record)
-                    print(" ✅" if keyword_record.get("objective_regret_percent") is not None else " ❌")
+                    print(" ✅" if keyword_record.get("metric_regret_percent") is not None else " ❌")
 
                     print(f"    - {BASELINE_COLUMNS[2]}...", end="", flush=True)
                     semantic_record = await evaluate_parameter_baseline(
@@ -567,7 +588,7 @@ async def run_regret_baseline_comparison() -> None:
                         prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[2]][scenario].append(semantic_record)
-                    print(" ✅" if semantic_record.get("objective_regret_percent") is not None else " ❌")
+                    print(" ✅" if semantic_record.get("metric_regret_percent") is not None else " ❌")
 
                     print(f"    - {BASELINE_COLUMNS[3]}...", end="", flush=True)
                     random_record = await evaluate_parameter_baseline(
@@ -580,7 +601,7 @@ async def run_regret_baseline_comparison() -> None:
                         prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[3]][scenario].append(random_record)
-                    print(" ✅" if random_record.get("objective_regret_percent") is not None else " ❌")
+                    print(" ✅" if random_record.get("metric_regret_percent") is not None else " ❌")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:

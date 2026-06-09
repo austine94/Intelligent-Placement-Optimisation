@@ -45,7 +45,7 @@ def load_regret_dataframe() -> pd.DataFrame | None:
         for run in runs:
             total += 1
             abs_regret = run.get("objective_regret_absolute")
-            pct_regret = run.get("objective_regret_percent")
+            pct_regret = run.get("metric_regret_percent", run.get("objective_regret_percent"))
             if pct_regret is not None:
                 pct_regret = abs(float(pct_regret))
 
@@ -57,7 +57,7 @@ def load_regret_dataframe() -> pd.DataFrame | None:
                 {
                     "Scenario": CATEGORY_MAP.get(category, category),
                     "Objective Regret (Absolute)": abs_regret,
-                    "Objective Absolute Regret (%)": pct_regret,
+                    "Metric-wise Absolute Regret (%)": pct_regret,
                 }
             )
 
@@ -92,7 +92,7 @@ def main() -> None:
         return
 
     # Text summary
-    summary = df.groupby("Scenario")[["Objective Regret (Absolute)", "Objective Absolute Regret (%)"]].mean()
+    summary = df.groupby("Scenario")[["Objective Regret (Absolute)", "Metric-wise Absolute Regret (%)"]].mean()
     print("\n--- Mean Regret by Scenario ---")
     print(summary.round(4))
     print("-" * 40)
@@ -107,8 +107,8 @@ def main() -> None:
 
     plot_metric(
         df=df,
-        y_col="Objective Absolute Regret (%)",
-        title="Objective Absolute Regret (%) by Scenario",
+        y_col="Metric-wise Absolute Regret (%)",
+        title="Metric-wise Absolute Regret (%) by Scenario",
         output_file="regret_percent.png",
         color="#ff7f0e",
     )

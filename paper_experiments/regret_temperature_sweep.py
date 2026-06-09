@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Benchmark objective regret across scenarios for a temperature sweep.
+"""Benchmark metric-wise regret across scenarios for a temperature sweep.
 
 For each generated world seed and prompt scenario, this script:
 1) solves the scenario with the fixed optimal parameters for that scenario;
 2) asks the local agent to choose solve_allocation parameters at each temperature;
-3) computes absolute objective regret percentage relative to the fixed optimum; and
+3) computes metric-wise absolute percentage regret for cost, energy, and latency relative to the fixed optimum; and
 4) writes both raw JSON results and average-regret tables.
 """
 
@@ -97,30 +97,93 @@ def parse_objective_from_text(text_output: str) -> float | None:
     return float(match.group(1))
 
 
-def compute_regret(agent_objective: float, optimal_objective: float) -> dict[str, float | None]:
-    """Compute signed objective regret and absolute percentage regret from the optimum."""
-    regret_absolute = agent_objective - optimal_objective
-    regret_percent = None
-    if optimal_objective != 0:
-        regret_percent = (abs(regret_absolute) / abs(optimal_objective)) * 100.0
+METRIC_REGRET_KEYS = {
+    "cost": ("cost", "total_financial_cost"),
+    "energy": ("energy", "total_energy_score"),
+    "latency": ("latency", "avg_latency"),
+}
+
+
+def metric_value(metrics: dict[str, Any], metric: str) -> float | None:
+    """Return a comparable metric value from parsed tool text or solver breakdowns."""
+    for key in METRIC_REGRET_KEYS[metric]:
+        value = metrics.get(key)
+        if value is not None:
+            return float(value)
+    return None
+
+
+def metric_absolute_percentage_regret(
+    agent_metrics: dict[str, Any],
+    optimal_metrics: dict[str, Any],
+    metric: str,
+) -> float | None:
+    """Compute absolute percentage regret for one metric, or None when unavailable."""
+    agent_value = metric_value(agent_metrics, metric)
+    optimal_value = metric_value(optimal_metrics, metric)
+    if agent_value is None or optimal_value is None or optimal_value == 0:
+        return None
+    return (abs(agent_value - optimal_value) / abs(optimal_value)) * 100.0
+
+
+def compute_regret(
+    agent_metrics: dict[str, Any],
+    optimal_metrics: dict[str, Any],
+    agent_objective: float | None = None,
+    optimal_objective: float | None = None,
+) -> dict[str, float | None]:
+    """Compute metric-wise absolute percentage regret from the optimum.
+
+    Regret is the average of the cost, energy, and latency absolute percentage
+    regrets. Objective regret fields are retained for backwards-compatible raw
+    output, but summary tables should use ``metric_regret_percent``.
+    """
+    metric_regrets = {
+        f"{metric}_regret_percent": metric_absolute_percentage_regret(
+            agent_metrics,
+            optimal_metrics,
+            metric,
+        )
+        for metric in METRIC_REGRET_KEYS
+    }
+    available_metric_regrets = [value for value in metric_regrets.values() if value is not None]
+    metric_regret_percent = (
+        average(available_metric_regrets)
+        if len(available_metric_regrets) == len(METRIC_REGRET_KEYS)
+        else None
+    )
+
+    objective_regret_absolute = None
+    objective_regret_percent = None
+    if agent_objective is not None and optimal_objective is not None:
+        objective_regret_absolute = agent_objective - optimal_objective
+        if optimal_objective != 0:
+            objective_regret_percent = (abs(objective_regret_absolute) / abs(optimal_objective)) * 100.0
 
     return {
-        "objective_regret_absolute": regret_absolute,
-        "objective_regret_percent": regret_percent,
+        **metric_regrets,
+        "metric_regret_percent": metric_regret_percent,
+        "objective_regret_absolute": objective_regret_absolute,
+        "objective_regret_percent": objective_regret_percent,
     }
 
 
-def objective_regret_percent_for_summary(run: dict[str, Any]) -> float | None:
-    """Return an absolute objective-regret percentage for summary tables.
+def metric_regret_percent_for_summary(run: dict[str, Any]) -> float | None:
+    """Return the preferred absolute regret percentage for summary tables.
 
-    Existing result JSON may contain signed percentages from older experiment runs, so
-    summaries defensively take abs() even though new runs store absolute percentages.
+    New result JSON stores metric-wise regret in ``metric_regret_percent``.
+    Existing result JSON may only contain objective regret, so summaries fall
+    back to ``objective_regret_percent`` and defensively take abs().
     """
-    regret_percent = run.get("objective_regret_percent")
+    regret_percent = run.get("metric_regret_percent", run.get("objective_regret_percent"))
     if regret_percent is None:
         return None
     return abs(float(regret_percent))
 
+
+def objective_regret_percent_for_summary(run: dict[str, Any]) -> float | None:
+    """Backward-compatible alias for metric_regret_percent_for_summary."""
+    return metric_regret_percent_for_summary(run)
 
 def average(values: list[float]) -> float | None:
     """Return the arithmetic mean, or None when no values are available."""
@@ -141,7 +204,7 @@ def build_average_regret_table(results: dict[str, Any]) -> list[dict[str, str]]:
             regrets = [
                 regret_percent
                 for run in runs
-                if (regret_percent := objective_regret_percent_for_summary(run)) is not None
+                if (regret_percent := metric_regret_percent_for_summary(run)) is not None
             ]
             avg_regret = average(regrets)
             row[temp_key] = "" if avg_regret is None else f"{avg_regret:.4f}"
@@ -184,7 +247,7 @@ def print_regret_table(table_rows: list[dict[str, str]]) -> None:
     def format_row(values: list[str]) -> str:
         return " | ".join(value.ljust(widths[index]) for index, value in enumerate(values))
 
-    print("\nAverage absolute objective regret percentage from optimum:")
+    print("\nAverage metric-wise absolute regret percentage from optimum:")
     print(format_row(headers))
     print("-+-".join("-" * width for width in widths))
     for row in rows:
@@ -326,7 +389,14 @@ async def run_regret_temperature_sweep() -> None:
                                 print(" ⚠️ Missing objective")
                                 continue
 
-                            record.update(compute_regret(agent_objective, record["optimal_objective"]))
+                            record.update(
+                                compute_regret(
+                                    agent_metrics,
+                                    record["optimal_metrics"],
+                                    agent_objective,
+                                    record["optimal_objective"],
+                                )
+                            )
                             results_db[str(temperature)][scenario].append(record)
                             print(" ✅")
 
