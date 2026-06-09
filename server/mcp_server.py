@@ -71,7 +71,7 @@ def load_problem_into_instance():
     raw_dc_costs = np.array(data['datacentre_costs'])
     raw_consumer_costs = np.array(data['consumer_costs'])    
     inst.datacentre_capacities = np.array(data['datacentre_capacities'])
-    inst.consumer_latencies = np.array(data['consumer_latencies'])
+    raw_consumer_latencies = np.array(data['consumer_latencies'])
     inst.datacentre_locations = np.array(data['datacentre_locations'])
     inst.consumer_locations = np.array(data['consumer_locations'])
     raw_energy_costs = np.array(data['energy_costs'])
@@ -91,10 +91,18 @@ def load_problem_into_instance():
         inst.energy_costs = raw_energy_costs / max_energy
     else:
         inst.energy_costs = raw_energy_costs
+
+    #normalise latency
+    max_latency = np.max(raw_consumer_latencies)
+    if max_latency > 0:
+        inst.consumer_latencies = raw_consumer_latencies / max_latency
+    else:
+        inst.consumer_latencies = raw_consumer_latencies
         
     #save scalers so we can re-interpret later
     inst.financial_scaler = max_financial
     inst.energy_scaler = max_energy
+    inst.latency_scaler = max_latency
     
     return inst
 

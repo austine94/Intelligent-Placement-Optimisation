@@ -377,11 +377,12 @@ class flexmedia_delivery_instance:
         #un-scale the final data
         f_scale = getattr(self, 'financial_scaler', 1.0)
         e_scale = getattr(self, 'energy_scaler', 1.0)
+        l_scale = getattr(self, 'latency_scaler', 1.0)
         
         return {
             "total_financial_cost": round(total_financial * f_scale, 2),
             "total_energy_score": round(total_energy * e_scale, 2),
-            "avg_latency": round(avg_lat, 4),
+            "avg_latency": round(avg_lat * l_scale, 4),
             "consumers_served": count_consumers
         }
 
