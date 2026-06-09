@@ -4,11 +4,15 @@
 
 For each generated world seed and prompt scenario, this script:
 1) solves the scenario with the fixed optimal parameters for that scenario;
-2) asks interstellarninja/llama3.1-8b-tools:latest at temperature 0.0 to choose solve_allocation parameters;
-3) chooses parameters with deterministic keyword and semantic classifiers;
-4) samples one random alpha/beta pair from the optimal-value grid;
-5) computes absolute objective regret percentage relative to the fixed optimum; and
-6) writes both raw JSON results and average-regret tables.
+2) rewrites the canonical scenario prompt with llama3.2:latest to fuzz the wording while
+   preserving the same optimisation requirements;
+3) asks aratan/qwen3-4b-tools:latest at temperature 0.0 to choose solve_allocation parameters;
+4) chooses parameters with deterministic keyword and semantic classifiers from the fuzzed prompt;
+5) samples one random alpha/beta pair from the optimal-value grid;
+6) falls back to the keyword classifier when the agentic tool call fails, so the
+   agentic baseline still yields a regret value for this experiment;
+7) computes absolute objective regret percentage relative to the fixed optimum; and
+8) writes both raw JSON results and average-regret tables.
 """
 
 from __future__ import annotations
@@ -41,13 +45,15 @@ from regret_temperature_sweep import (  # noqa: E402
 
 
 # --- CONFIGURATION ---
-N_REPS = 80
-MODEL = "interstellarninja/llama3.1-8b-tools:latest"
+N_REPS = 250
+MODEL = "aratan/qwen3-4b-tools:latest"
 TEMPERATURE = 0.0
+PROMPT_FUZZ_MODEL = "llama3.2:latest"
+PROMPT_FUZZ_TEMPERATURE = 0.8
 MAX_DATACENTRES = 9999
 
 BASELINE_COLUMNS = [
-    "Agentic interstellarninja/llama3.1-8b-tools:latest temp=0.0",
+    f"Agentic {MODEL} temp={TEMPERATURE}",
     "Keyword classifier",
     "Semantic classifier",
     "Random parameter selection",
@@ -177,6 +183,78 @@ def print_regret_table(table_rows: list[dict[str, str]]) -> None:
         print(format_row(row))
 
 
+def prompt_generation_seed(rep: int, scenario: str) -> int:
+    """Return a deterministic Ollama seed for a generated prompt variant."""
+    return (rep * 1000) + SCENARIO_ORDER.index(scenario)
+
+
+def clean_generated_prompt(content: str) -> str:
+    """Normalise a model-generated prompt to a single prompt string."""
+    cleaned = content.strip()
+    if cleaned.startswith("```") and cleaned.endswith("```"):
+        cleaned = "\n".join(cleaned.splitlines()[1:-1]).strip()
+
+    cleaned = cleaned.strip(" \t\n\r\"\'")
+    return " ".join(cleaned.split())
+
+
+def generate_fuzzed_prompt(scenario: str, canonical_prompt: str, rep: int) -> dict[str, Any]:
+    """Rewrite a canonical scenario prompt while preserving its optimisation intent.
+
+    The fuzzing model is deliberately separated from the agentic tool-calling model so
+    the baseline comparison evaluates prompt robustness rather than a single fixed
+    wording of each scenario. If prompt generation fails, the experiment falls back to
+    the canonical prompt and records the generation error in the result JSON.
+    """
+    import ollama
+
+    seed = prompt_generation_seed(rep, scenario)
+    record: dict[str, Any] = {
+        "original_prompt": canonical_prompt,
+        "prompt_generation_model": PROMPT_FUZZ_MODEL,
+        "prompt_generation_temperature": PROMPT_FUZZ_TEMPERATURE,
+        "prompt_generation_seed": seed,
+    }
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You rewrite benchmark prompts for an optimisation experiment. "
+                "Preserve the exact same requirements, objective priorities, trade-offs, "
+                "and the instruction to use all datacentres. Do not introduce new goals, "
+                "remove existing goals, mention alpha/beta values, or solve the problem. "
+                "Return only one rewritten user prompt with no explanation."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Scenario key: {scenario}\n"
+                f"Canonical prompt: {canonical_prompt}\n\n"
+                "Rewrite the canonical prompt in different wording while asking for the same optimisation."
+            ),
+        },
+    ]
+
+    try:
+        response = ollama.chat(
+            model=PROMPT_FUZZ_MODEL,
+            messages=messages,
+            options={"seed": seed, "temperature": PROMPT_FUZZ_TEMPERATURE},
+        )
+        generated_prompt = clean_generated_prompt(response["message"].get("content", ""))
+        if not generated_prompt:
+            raise ValueError("Prompt fuzzing model returned empty content")
+
+        record["prompt"] = generated_prompt
+        return record
+    except Exception as exc:
+        record["prompt"] = canonical_prompt
+        record["prompt_generation_error"] = str(exc)
+        return record
+
+
 def keyword_classifier(prompt: str) -> dict[str, Any]:
     """Select the first single-objective parameter profile whose keywords occur in the prompt."""
     prompt_lower = prompt.lower()
@@ -223,6 +301,7 @@ async def evaluate_parameter_baseline(
     rep: int,
     optimal_output: dict[str, Any],
     parameter_selector: Callable[[], dict[str, Any]],
+    prompt_record: dict[str, Any],
     sample_index: int | None = None,
 ) -> dict[str, Any]:
     """Run solve_allocation for selected parameters and compute regret."""
@@ -233,6 +312,7 @@ async def evaluate_parameter_baseline(
         "baseline": baseline_name,
         "prompt_category": scenario,
         "selected_tool_args": selected_params,
+        **prompt_record,
         **optimal_output,
     }
     if sample_index is not None:
@@ -258,6 +338,43 @@ async def evaluate_parameter_baseline(
         return record
 
 
+async def apply_agent_keyword_fallback(
+    session: Any,
+    record: dict[str, Any],
+    prompt: str,
+    reason: str,
+) -> dict[str, Any]:
+    """Use the keyword classifier when the agentic tool call fails in this experiment.
+
+    This fallback is intentionally scoped to the regret baseline comparison because the
+    experiment needs a regret value for every generated prompt. The raw record keeps the
+    original agent failure reason and marks that the reported regret came from the
+    keyword fallback rather than a successful agent tool call.
+    """
+    record["agent_tool_call_failed"] = True
+    record["agent_tool_call_failure_reason"] = reason
+    record["fallback_used"] = True
+    record["fallback_baseline"] = "Keyword classifier"
+
+    fallback_params = keyword_classifier(prompt)
+    record["fallback_tool_args"] = fallback_params
+
+    try:
+        fallback_metrics, fallback_objective = await call_solve_allocation(session, fallback_params)
+        record["fallback_metrics"] = fallback_metrics
+        record["fallback_objective"] = fallback_objective
+
+        if fallback_objective is None:
+            record["error"] = "Keyword fallback could not parse selected objective"
+            return record
+
+        record.update(compute_regret(fallback_objective, record["optimal_objective"]))
+        return record
+    except Exception as exc:
+        record["error"] = f"Keyword fallback error after agent failure ({reason}): {exc}"
+        return record
+
+
 async def evaluate_agentic_baseline(
     session: Any,
     ollama_tools: list[dict[str, Any]],
@@ -265,6 +382,7 @@ async def evaluate_agentic_baseline(
     prompt: str,
     rep: int,
     optimal_output: dict[str, Any],
+    prompt_record: dict[str, Any],
 ) -> dict[str, Any]:
     """Ask the configured Ollama model for solve_allocation parameters and compute regret."""
     import ollama
@@ -276,6 +394,7 @@ async def evaluate_agentic_baseline(
         "model": MODEL,
         "temperature": TEMPERATURE,
         "prompt_category": scenario,
+        **prompt_record,
         **optimal_output,
     }
 
@@ -301,8 +420,7 @@ async def evaluate_agentic_baseline(
 
         tool_calls = response["message"].get("tool_calls", [])
         if not tool_calls:
-            record["error"] = "No tool call from agent"
-            return record
+            return await apply_agent_keyword_fallback(session, record, prompt, "No tool call from agent")
 
         tool_call = tool_calls[0]
         agent_fn_name = tool_call["function"]["name"]
@@ -310,22 +428,24 @@ async def evaluate_agentic_baseline(
         record["agent_tool_args"] = agent_fn_args
 
         if agent_fn_name != "solve_allocation":
-            record["error"] = f"Agent called unexpected tool: {agent_fn_name}"
-            return record
+            return await apply_agent_keyword_fallback(
+                session,
+                record,
+                prompt,
+                f"Agent called unexpected tool: {agent_fn_name}",
+            )
 
         agent_metrics, agent_objective = await call_solve_allocation(session, agent_fn_args)
         record["agent_metrics"] = agent_metrics
         record["agent_objective"] = agent_objective
 
         if agent_objective is None:
-            record["error"] = "Could not parse agent objective"
-            return record
+            return await apply_agent_keyword_fallback(session, record, prompt, "Could not parse agent objective")
 
         record.update(compute_regret(agent_objective, record["optimal_objective"]))
         return record
     except Exception as exc:
-        record["error"] = f"Agent run error: {exc}"
-        return record
+        return await apply_agent_keyword_fallback(session, record, prompt, f"Agent run error: {exc}")
 
 
 async def run_regret_baseline_comparison() -> None:
@@ -340,6 +460,7 @@ async def run_regret_baseline_comparison() -> None:
     )
     print(f"🤖 Agentic model: {MODEL}")
     print(f"🌡️ Agentic temperature: {TEMPERATURE}")
+    print(f"🧪 Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}")
     print("🎲 Random samples per generated workload/scenario: 1")
     print(f"🎯 Optimal parameters: {OPTIMAL_PARAMS}")
     print(f"🎛️ Random parameter grid: {PARAMETER_GRID}")
@@ -395,9 +516,14 @@ async def run_regret_baseline_comparison() -> None:
                         }
 
                 for scenario in SCENARIO_ORDER:
-                    prompt = TEST_PROMPTS[scenario]
+                    canonical_prompt = TEST_PROMPTS[scenario]
                     optimal_output = optimal_outputs[scenario]
                     print(f"  > Strat: {scenario:<15}")
+
+                    print(f"    - prompt fuzz via {PROMPT_FUZZ_MODEL}...", end="", flush=True)
+                    prompt_record = generate_fuzzed_prompt(scenario, canonical_prompt, rep)
+                    prompt = prompt_record["prompt"]
+                    print(" ✅" if "prompt_generation_error" not in prompt_record else " ⚠️ fallback")
 
                     print(f"    - {BASELINE_COLUMNS[0]}...", end="", flush=True)
                     agent_record = await evaluate_agentic_baseline(
@@ -407,9 +533,15 @@ async def run_regret_baseline_comparison() -> None:
                         prompt,
                         rep,
                         optimal_output,
+                        prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[0]][scenario].append(agent_record)
-                    print(" ✅" if agent_record.get("objective_regret_percent") is not None else " ❌")
+                    if agent_record.get("objective_regret_percent") is None:
+                        print(" ❌")
+                    elif agent_record.get("fallback_used"):
+                        print(" ⚠️ keyword fallback")
+                    else:
+                        print(" ✅")
 
                     print(f"    - {BASELINE_COLUMNS[1]}...", end="", flush=True)
                     keyword_record = await evaluate_parameter_baseline(
@@ -419,6 +551,7 @@ async def run_regret_baseline_comparison() -> None:
                         rep,
                         optimal_output,
                         lambda prompt=prompt: keyword_classifier(prompt),
+                        prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[1]][scenario].append(keyword_record)
                     print(" ✅" if keyword_record.get("objective_regret_percent") is not None else " ❌")
@@ -431,6 +564,7 @@ async def run_regret_baseline_comparison() -> None:
                         rep,
                         optimal_output,
                         lambda prompt=prompt: semantic_classifier(prompt),
+                        prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[2]][scenario].append(semantic_record)
                     print(" ✅" if semantic_record.get("objective_regret_percent") is not None else " ❌")
@@ -443,6 +577,7 @@ async def run_regret_baseline_comparison() -> None:
                         rep,
                         optimal_output,
                         lambda rep=rep, scenario=scenario: random_parameter_selection(rep, scenario),
+                        prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[3]][scenario].append(random_record)
                     print(" ✅" if random_record.get("objective_regret_percent") is not None else " ❌")
