@@ -6,7 +6,7 @@ Benchmark agent regret against a deterministic baseline solve.
 For each generated world seed and prompt scenario:
 1) Run the agent-style tool selection via ollama + MCP tools.
 2) Run a deterministic baseline solve with fixed target parameters for that scenario.
-3) Compute objective regret (absolute and percentage) using objective values.
+3) Compute signed objective regret and absolute percentage regret using objective values.
 """
 
 import asyncio
@@ -78,7 +78,7 @@ def parse_objective_from_text(text_output: str) -> float | None:
 
 def compute_regret(agent_obj: float, baseline_obj: float) -> Dict[str, float | None]:
     regret_abs = agent_obj - baseline_obj
-    regret_pct = None if baseline_obj == 0 else (regret_abs / baseline_obj) * 100.0
+    regret_pct = None if baseline_obj == 0 else (abs(regret_abs) / abs(baseline_obj)) * 100.0
     return {"objective_regret_absolute": regret_abs, "objective_regret_percent": regret_pct}
 
 

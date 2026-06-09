@@ -55,7 +55,7 @@ Run the regret temperature sweep with:
 python paper_experiments/regret_temperature_sweep.py
 ```
 
-This compares the six scenarios across the temperature sweep `0.0, 0.25, 0.5, 0.75, 1.0`, writes raw JSON results to `experiment_data/regret_temperature_sweep_results.json`, and writes average objective-regret percentage tables to:
+This compares the six scenarios across the temperature sweep `0.0, 0.25, 0.5, 0.75, 1.0`, writes raw JSON results to `experiment_data/regret_temperature_sweep_results.json`, and writes average absolute objective-regret percentage tables to:
 
 - `experiment_data/regret_temperature_sweep_average_regret_table.csv`
 - `experiment_data/regret_temperature_sweep_average_regret_table.md`
@@ -68,7 +68,7 @@ Run the regret model sweep with:
 python paper_experiments/regret_model_sweep.py
 ```
 
-This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3:8b`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. It writes raw JSON results to `experiment_data/regret_model_sweep_results.json`, and writes average objective-regret percentage tables to:
+This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. It writes raw JSON results to `experiment_data/regret_model_sweep_results.json`, and writes average absolute objective-regret percentage tables to:
 
 - `experiment_data/regret_model_sweep_average_regret_table.csv`
 - `experiment_data/regret_model_sweep_average_regret_table.md`
@@ -107,7 +107,7 @@ Run the cost-latency trade-off scalability experiment with:
 python paper_experiments/scalability_experiment.py
 ```
 
-This generates workloads with `50, 100, ..., 1000` consumers using `scripts/scalability_data_generator.py`, with 30 repetitions per workload size. Each workload uses 5 datacentres with capacity 1100 each so the 1000-consumer instances are feasible. For each generated workload, the script evaluates the `tradeoff_cost_latency` scenario across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3:8b`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. It records objective-regret percentage against the cost-latency target, all top-level Ollama count fields, total token count, agent end-to-end time, and total case time. Raw JSON results are written to `experiment_data/scalability_experiment_results.json`, and average metric tables are written to:
+This generates workloads with `50, 100, ..., 1000` consumers using `scripts/scalability_data_generator.py`, with 30 repetitions per workload size. Each workload uses 5 datacentres with capacity 1100 each so the 1000-consumer instances are feasible. For each generated workload, the script evaluates the `tradeoff_cost_latency` scenario across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3:8b`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. It records absolute objective-regret percentage against the cost-latency target, all top-level Ollama count fields, total token count, agent end-to-end time, and total case time. Raw JSON results are written to `experiment_data/scalability_experiment_results.json`, and average metric tables are written to:
 
 - `experiment_data/scalability_average_metrics_table.csv`
 - `experiment_data/scalability_average_metrics_table.md`
