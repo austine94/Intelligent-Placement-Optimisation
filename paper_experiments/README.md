@@ -60,6 +60,19 @@ This compares the six scenarios across the temperature sweep `0.0, 0.25, 0.5, 0.
 - `experiment_data/regret_temperature_sweep_average_regret_table.csv`
 - `experiment_data/regret_temperature_sweep_average_regret_table.md`
 
+## Regret baseline comparison
+
+Run the regret baseline comparison with:
+
+```bash
+python paper_experiments/regret_baseline_comparison.py
+```
+
+This compares the six scenarios over 250 generated workloads. For each workload/scenario pair, the script first rewrites the canonical scenario prompt with `llama3.2:latest` to create a fuzzed prompt that preserves the same optimisation requirements. It then evaluates the agentic `aratan/qwen3-4b-tools:latest` baseline at temperature `0.0`, the deterministic keyword classifier, the lightweight semantic classifier, and random parameter selection against that fuzzed prompt. If the agentic baseline fails to produce a usable `solve_allocation` tool call, this experiment only falls back to the keyword classifier so the agentic-baseline row still has a regret value; raw JSON records mark the fallback and keep the original agent failure reason. Raw JSON records also include both the original and fuzzed prompts, plus prompt-generation metadata. The script writes raw JSON results to `experiment_data/regret_baseline_comparison_results.json`, and writes average absolute objective-regret percentage tables to:
+
+- `experiment_data/regret_baseline_comparison_average_regret_table.csv`
+- `experiment_data/regret_baseline_comparison_average_regret_table.md`
+
 ## Regret model sweep
 
 Run the regret model sweep with:
