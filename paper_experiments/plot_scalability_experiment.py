@@ -24,7 +24,7 @@ RESULTS_FILE = EXPERIMENT_DATA_DIR / "scalability_experiment_results.json"
 MODEL_COLOURS: dict[str, tuple[float, float, float]] = {
     "interstellarninja/llama3.1-8b-tools:latest": (0.12, 0.47, 0.71),
     "llama3.2:1b": (1.00, 0.50, 0.05),
-    "llama3:8b": (0.17, 0.63, 0.17),
+    "llama3.2:latest": (0.17, 0.63, 0.17),
     "aratan/qwen3-4b-tools:latest": (0.84, 0.15, 0.16),
     "lukaspetrik/gemma3-tools:4b": (0.58, 0.40, 0.74),
 }
