@@ -25,7 +25,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.append(str(SCRIPT_DIR))
 
-from parameter_selection_accuracy import TOOL_DEFINITION
+from parameter_selection_accuracy import SYSTEM_PROMPT, TOOL_DEFINITION
 from regret_temperature_sweep import OPTIMAL_PARAMS, compute_regret, metric_regret_percent_for_summary
 
 # --- CONFIGURATION ---
@@ -296,7 +296,6 @@ async def run_scalability_experiment() -> None:
         str(workload_size): {model: [] for model in MODELS}
         for workload_size in WORKLOAD_SIZES
     }
-    ollama_tools = TOOL_DEFINITION
     evaluation_args = OPTIMAL_PARAMS[SCENARIO]
 
     for workload_size in WORKLOAD_SIZES:
@@ -350,10 +349,7 @@ async def run_scalability_experiment() -> None:
                     continue
 
                 messages = [
-                    {
-                        "role": "system",
-                        "content": "You are the FlexMedia Ops Manager. Use 'solve_allocation' to optimize.",
-                    },
+                    {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": PROMPT},
                 ]
 
@@ -365,7 +361,7 @@ async def run_scalability_experiment() -> None:
                     response = ollama.chat(
                         model=model,
                         messages=messages,
-                        tools=ollama_tools,
+                        tools=TOOL_DEFINITION,
                         options={"seed": seed, "temperature": TEMPERATURE},
                     )
                     model_seconds = time.perf_counter() - model_start
