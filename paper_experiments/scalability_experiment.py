@@ -31,7 +31,7 @@ from regret_temperature_sweep import OPTIMAL_PARAMS, compute_regret, metric_regr
 # --- CONFIGURATION ---
 WORKLOAD_SIZES = list(range(50, 1001, 50))
 N_REPS = 30
-TEMPERATURE = 0.0
+TEMPERATURE = 0.2
 SCENARIO = "tradeoff_cost_latency"
 PROMPT = "Optimise this using all datacentres. Keep financial cost controlled, but maintain acceptable user experience."
 MODELS = [

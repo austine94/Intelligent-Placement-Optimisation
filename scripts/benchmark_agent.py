@@ -12,7 +12,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 # --- CONFIGURATION ---
-N_REPS = 80   #number of sim reps
+N_REPS = 250   #number of sim reps
 MODEL = "interstellarninja/llama3.1-8b-tools:latest"  # Ensure you have pulled this model: `ollama pull interstellarninja/llama3.1-8b-tools:latest`
 RESULTS_FILE = "data/benchmark_results.json"
 

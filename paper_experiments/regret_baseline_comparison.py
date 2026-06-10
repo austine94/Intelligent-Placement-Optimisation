@@ -6,7 +6,7 @@ For each generated world seed and prompt scenario, this script:
 1) solves the scenario with the fixed optimal parameters for that scenario;
 2) rewrites the canonical scenario prompt with llama3.2:latest to fuzz the wording while
    preserving the same optimisation requirements;
-3) asks aratan/qwen3-4b-tools:latest at temperature 0.0 to choose solve_allocation parameters;
+3) asks aratan/qwen3-4b-tools:latest at temperature 0.2 to choose solve_allocation parameters;
 4) chooses parameters with deterministic keyword and semantic classifiers from the fuzzed prompt;
 5) samples one random alpha/beta pair from the optimal-value grid;
 6) falls back to the keyword classifier when the agentic tool call fails, so the
@@ -57,7 +57,7 @@ from regret_temperature_sweep import (  # noqa: E402
 # --- CONFIGURATION ---
 N_REPS = 250
 MODEL = "aratan/qwen3-4b-tools:latest"
-TEMPERATURE = 0.0
+TEMPERATURE = 0.2
 PROMPT_FUZZ_MODEL = "llama3.2:latest"
 PROMPT_FUZZ_TEMPERATURE = 0.8
 MAX_DATACENTRES = 9999

@@ -38,8 +38,8 @@ from parameter_selection_accuracy import SYSTEM_PROMPT, TOOL_DEFINITION
 
 
 # --- CONFIGURATION ---
-N_REPS = 80
-TEMPERATURE = 0.0
+N_REPS = 250
+TEMPERATURE = 0.2
 MODELS = [
     "interstellarninja/llama3.1-8b-tools:latest",
     "llama3.2:1b",

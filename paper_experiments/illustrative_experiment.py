@@ -14,7 +14,7 @@ from mcp.client.stdio import stdio_client
 from parameter_selection_accuracy import SYSTEM_PROMPT, TOOL_DEFINITION
 
 # --- CONFIGURATION ---
-N_REPS = 80   #number of sim reps
+N_REPS = 250   #number of sim reps
 MODEL = "interstellarninja/llama3.1-8b-tools:latest"  # Ensure you have pulled this model: `ollama pull interstellarninja/llama3.1-8b-tools:latest`
 EXPERIMENT_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "experiment_data")
 RESULTS_FILE = os.path.join(EXPERIMENT_DATA_DIR, "illustrative_experiment_results.json")
