@@ -34,6 +34,8 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from parameter_selection_accuracy import (  # noqa: E402
+    SYSTEM_PROMPT,
+    TOOL_DEFINITION,
     build_accuracy_table,
     print_accuracy_table,
     score_parameter_selection,
@@ -419,7 +421,6 @@ async def apply_agent_keyword_fallback(
 
 async def evaluate_agentic_baseline(
     session: Any,
-    ollama_tools: list[dict[str, Any]],
     scenario: str,
     prompt: str,
     rep: int,
@@ -446,10 +447,7 @@ async def evaluate_agentic_baseline(
         return record
 
     messages = [
-        {
-            "role": "system",
-            "content": "You are the FlexMedia Ops Manager. Use 'solve_allocation' to optimize.",
-        },
+        {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": prompt},
     ]
 
@@ -457,7 +455,7 @@ async def evaluate_agentic_baseline(
         response = ollama.chat(
             model=MODEL,
             messages=messages,
-            tools=ollama_tools,
+            tools=TOOL_DEFINITION,
             options={"seed": rep, "temperature": TEMPERATURE},
         )
 
@@ -531,19 +529,6 @@ async def run_regret_baseline_comparison() -> None:
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            mcp_tools = await session.list_tools()
-            ollama_tools = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.inputSchema,
-                    },
-                }
-                for tool in mcp_tools.tools
-            ]
-
             for rep in range(N_REPS):
                 print(f"\n📢 --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
                 subprocess.run(["python", str(GENERATOR_SCRIPT), str(rep)], check=True, capture_output=True)
@@ -579,7 +564,6 @@ async def run_regret_baseline_comparison() -> None:
                     print(f"    - {BASELINE_COLUMNS[0]}...", end="", flush=True)
                     agent_record = await evaluate_agentic_baseline(
                         session,
-                        ollama_tools,
                         scenario,
                         prompt,
                         rep,

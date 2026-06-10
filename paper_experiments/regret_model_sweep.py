@@ -34,6 +34,7 @@ from regret_temperature_sweep import (
     compute_regret,
     metric_regret_percent_for_summary,
 )
+from parameter_selection_accuracy import SYSTEM_PROMPT, TOOL_DEFINITION
 
 
 # --- CONFIGURATION ---
@@ -146,19 +147,6 @@ async def run_regret_model_sweep() -> None:
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            mcp_tools = await session.list_tools()
-            ollama_tools = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.inputSchema,
-                    },
-                }
-                for tool in mcp_tools.tools
-            ]
-
             for rep in range(N_REPS):
                 print(f"\n📢 --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
                 subprocess.run(["python", str(GENERATOR_SCRIPT), str(rep)], check=True, capture_output=True)
@@ -203,10 +191,7 @@ async def run_regret_model_sweep() -> None:
                             continue
 
                         messages = [
-                            {
-                                "role": "system",
-                                "content": "You are the FlexMedia Ops Manager. Use 'solve_allocation' to optimize.",
-                            },
+                            {"role": "system", "content": SYSTEM_PROMPT},
                             {"role": "user", "content": prompt},
                         ]
 
@@ -214,7 +199,7 @@ async def run_regret_model_sweep() -> None:
                             response = ollama.chat(
                                 model=model,
                                 messages=messages,
-                                tools=ollama_tools,
+                                tools=TOOL_DEFINITION,
                                 options={"seed": rep, "temperature": TEMPERATURE},
                             )
 

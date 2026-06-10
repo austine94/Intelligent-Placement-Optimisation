@@ -11,6 +11,8 @@ import ollama
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from parameter_selection_accuracy import SYSTEM_PROMPT, TOOL_DEFINITION
+
 # --- CONFIGURATION ---
 N_REPS = 80   #number of sim reps
 MODEL = "interstellarninja/llama3.1-8b-tools:latest"  # Ensure you have pulled this model: `ollama pull interstellarninja/llama3.1-8b-tools:latest`
@@ -74,19 +76,6 @@ async def run_benchmark():
         async with ClientSession(read, write) as session:
             await session.initialize()
             
-            # Get tools and convert to Ollama format
-            mcp_tools = await session.list_tools()
-            ollama_tools = []
-            for tool in mcp_tools.tools:
-                ollama_tools.append({
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.inputSchema
-                    }
-                })
-
             # --- MAIN LOOP (INVERTED) ---
             # Loop 1: Iterate through SEEDS (0 to N_REPS)
             for i in range(N_REPS):
@@ -106,7 +95,7 @@ async def run_benchmark():
                     
                     # B. Ask LLM
                     messages = [
-                        {"role": "system", "content": "You are the FlexMedia Ops Manager. Use 'solve_allocation' to optimize."},
+                        {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": prompt}
                     ]
                     
@@ -114,7 +103,7 @@ async def run_benchmark():
                         response = ollama.chat(
                             model=MODEL,
                             messages=messages,
-                            tools=ollama_tools,
+                            tools=TOOL_DEFINITION,
                             options={
                                 'seed': i,
                                 'temperature': 0.7 
