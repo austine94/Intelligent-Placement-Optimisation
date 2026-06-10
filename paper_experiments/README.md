@@ -86,6 +86,20 @@ This compares the six scenarios across the configured locally installed Ollama S
 - `experiment_data/regret_model_sweep_average_regret_table.csv`
 - `experiment_data/regret_model_sweep_average_regret_table.md`
 
+## Regret model-sweep parameter-selection accuracy
+
+After running the regret model sweep, compute parameter-selection accuracy from the same raw records with:
+
+```bash
+python paper_experiments/regret_model_sweep_parameter_selection_accuracy.py
+```
+
+This post-processing step reads `experiment_data/regret_model_sweep_results.json`, scores the `agent_tool_args` selected during that regret experiment using the same `±0.05` alpha/beta tolerance and combined score as the standalone parameter-accuracy sweeps, and writes aligned model-sweep accuracy outputs to:
+
+- `experiment_data/regret_model_sweep_parameter_selection_accuracy_results.json`
+- `experiment_data/regret_model_sweep_parameter_selection_accuracy_table.csv`
+- `experiment_data/regret_model_sweep_parameter_selection_accuracy_table.md`
+
 ## Parameter accuracy temperature sweep
 
 Run the parameter-selection accuracy temperature sweep with:
