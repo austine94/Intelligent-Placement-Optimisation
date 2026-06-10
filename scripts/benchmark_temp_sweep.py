@@ -19,7 +19,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 # --- CONFIGURATION ---
-N_REPS = 80
+N_REPS = 250
 MODEL = "interstellarninja/llama3.1-8b-tools:latest"
 TEMPERATURES = [0.0, 0.25, 0.5, 0.75, 1.0]
 RESULTS_FILE = "data/benchmark_temp_sweep_results.json"

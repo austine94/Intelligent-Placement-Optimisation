@@ -24,7 +24,7 @@ from parameter_selection_accuracy import SYSTEM_PROMPT, TOOL_DEFINITION
 
 
 # --- CONFIGURATION ---
-N_REPS = 80
+N_REPS = 250
 MODEL = "interstellarninja/llama3.1-8b-tools:latest"
 TEMPERATURES = [temperature / 100 for temperature in (0, 25, 50, 75, 100)]
 

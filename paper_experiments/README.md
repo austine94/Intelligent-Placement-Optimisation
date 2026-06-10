@@ -70,7 +70,7 @@ Run the regret baseline comparison with:
 python paper_experiments/regret_baseline_comparison.py
 ```
 
-This compares the six scenarios over 250 generated workloads. For each workload/scenario pair, the script first rewrites the canonical scenario prompt with `llama3.2:latest` to create a fuzzed prompt that preserves the same optimisation requirements. It then evaluates the agentic `aratan/qwen3-4b-tools:latest` baseline at temperature `0.0` using the shared parameter-selection prompt/tool contract, the deterministic keyword classifier, the lightweight semantic classifier, and random parameter selection against that fuzzed prompt. If the agentic baseline fails to produce a usable `solve_allocation` tool call, this experiment only falls back to the keyword classifier so the agentic-baseline row still has a regret value; raw JSON records mark the fallback and keep the original agent failure reason. Raw JSON records also include both the original and fuzzed prompts, plus prompt-generation metadata. The script writes raw JSON results to `experiment_data/regret_baseline_comparison_results.json`, and writes average metric-wise absolute regret percentage tables to:
+This compares the six scenarios over 250 generated workloads. For each workload/scenario pair, the script first rewrites the canonical scenario prompt with `llama3.2:latest` to create a fuzzed prompt that preserves the same optimisation requirements. It then evaluates the agentic `aratan/qwen3-4b-tools:latest` baseline at temperature `0.2` using the shared parameter-selection prompt/tool contract, the deterministic keyword classifier, the lightweight semantic classifier, and random parameter selection against that fuzzed prompt. If the agentic baseline fails to produce a usable `solve_allocation` tool call, this experiment only falls back to the keyword classifier so the agentic-baseline row still has a regret value; raw JSON records mark the fallback and keep the original agent failure reason. Raw JSON records also include both the original and fuzzed prompts, plus prompt-generation metadata. The script writes raw JSON results to `experiment_data/regret_baseline_comparison_results.json`, and writes average metric-wise absolute regret percentage tables to:
 
 - `experiment_data/regret_baseline_comparison_average_regret_table.csv`
 - `experiment_data/regret_baseline_comparison_average_regret_table.md`
@@ -83,7 +83,7 @@ Run the regret model sweep with:
 python paper_experiments/regret_model_sweep.py
 ```
 
-This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. The agent uses the same parameter-selection system prompt and `solve_allocation` tool definition as the model-sweep parameter-accuracy experiment so regret and regret-derived accuracy are measured from the same parameter-selection conditions. It writes raw JSON results to `experiment_data/regret_model_sweep_results.json`, and writes average metric-wise absolute regret percentage tables to:
+This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.2`. The agent uses the same parameter-selection system prompt and `solve_allocation` tool definition as the model-sweep parameter-accuracy experiment so regret and regret-derived accuracy are measured from the same parameter-selection conditions. It writes raw JSON results to `experiment_data/regret_model_sweep_results.json`, and writes average metric-wise absolute regret percentage tables to:
 
 - `experiment_data/regret_model_sweep_average_regret_table.csv`
 - `experiment_data/regret_model_sweep_average_regret_table.md`
@@ -101,6 +101,34 @@ This post-processing step reads `experiment_data/regret_model_sweep_results.json
 - `experiment_data/regret_model_sweep_parameter_selection_accuracy_results.json`
 - `experiment_data/regret_model_sweep_parameter_selection_accuracy_table.csv`
 - `experiment_data/regret_model_sweep_parameter_selection_accuracy_table.md`
+
+
+## Varying-prompt regret model sweep
+
+Run the varying-prompt regret model sweep with:
+
+```bash
+python paper_experiments/varying_prompt_regret_model_sweep.py
+```
+
+This follows the regret model sweep setup at temperature `0.2`, but for each generated workload/scenario pair it first rewrites the canonical prompt with `llama3.2:latest` using the same prompt-generation mechanism as the regret baseline comparison. The generated prompt variant is shared across all configured models for that workload/scenario pair, so each model is evaluated against the same wording. Raw JSON records include both the original and generated prompts, plus prompt-generation metadata. The script writes raw JSON results to `experiment_data/varying_prompt_regret_model_sweep_results.json`, and writes average metric-wise absolute regret percentage tables to:
+
+- `experiment_data/varying_prompt_regret_model_sweep_average_regret_table.csv`
+- `experiment_data/varying_prompt_regret_model_sweep_average_regret_table.md`
+
+## Varying-prompt regret model-sweep parameter-selection accuracy
+
+After running the varying-prompt regret model sweep, compute parameter-selection accuracy from the same raw records with:
+
+```bash
+python paper_experiments/varying_prompt_regret_model_sweep_parameter_selection_accuracy.py
+```
+
+This post-processing step reads `experiment_data/varying_prompt_regret_model_sweep_results.json`, scores the `agent_tool_args` selected during that regret experiment using the same `±0.05` alpha/beta tolerance and combined score as the standalone parameter-accuracy sweeps, and writes aligned varying-prompt model-sweep accuracy outputs to:
+
+- `experiment_data/varying_prompt_regret_model_sweep_parameter_selection_accuracy_results.json`
+- `experiment_data/varying_prompt_regret_model_sweep_parameter_selection_accuracy_table.csv`
+- `experiment_data/varying_prompt_regret_model_sweep_parameter_selection_accuracy_table.md`
 
 ## Parameter accuracy temperature sweep
 
@@ -123,7 +151,7 @@ Run the parameter-selection accuracy model sweep with:
 python paper_experiments/parameter_accuracy_model_sweep.py
 ```
 
-This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0`. It uses the same `±0.05` parameter tolerance and combined alpha/beta repetition score as the temperature sweep. The script writes raw JSON results to `experiment_data/parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
+This compares the six scenarios across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.2`. It uses the same `±0.05` parameter tolerance and combined alpha/beta repetition score as the temperature sweep. The script writes raw JSON results to `experiment_data/parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
 
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`
@@ -136,7 +164,7 @@ Run the cost-latency trade-off scalability experiment with:
 python paper_experiments/scalability_experiment.py
 ```
 
-This generates workloads with `50, 100, ..., 1000` consumers using `scripts/scalability_data_generator.py`, with 30 repetitions per workload size. Each workload uses 5 datacentres with capacity 1100 each so the 1000-consumer instances are feasible. For each generated workload, the script evaluates the `tradeoff_cost_latency` scenario across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.0` using the shared parameter-selection prompt/tool contract. It records metric-wise absolute regret percentage against the cost-latency target, all top-level Ollama count fields, total token count, agent end-to-end time, and total case time. Raw JSON results are written to `experiment_data/scalability_experiment_results.json`, and average metric tables are written to:
+This generates workloads with `50, 100, ..., 1000` consumers using `scripts/scalability_data_generator.py`, with 30 repetitions per workload size. Each workload uses 5 datacentres with capacity 1100 each so the 1000-consumer instances are feasible. For each generated workload, the script evaluates the `tradeoff_cost_latency` scenario across the configured locally installed Ollama SLMs `interstellarninja/llama3.1-8b-tools:latest`, `llama3.2:1b`, `llama3.2:latest`, `aratan/qwen3-4b-tools:latest`, and `lukaspetrik/gemma3-tools:4b` at temperature `0.2` using the shared parameter-selection prompt/tool contract. It records metric-wise absolute regret percentage against the cost-latency target, all top-level Ollama count fields, total token count, agent end-to-end time, and total case time. Raw JSON results are written to `experiment_data/scalability_experiment_results.json`, and average metric tables are written to:
 
 - `experiment_data/scalability_average_metrics_table.csv`
 - `experiment_data/scalability_average_metrics_table.md`

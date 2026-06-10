@@ -24,7 +24,7 @@ from parameter_selection_accuracy import (
 )
 
 # --- CONFIGURATION ---
-N_REPS = 80
+N_REPS = 250
 MODEL = "interstellarninja/llama3.1-8b-tools:latest"
 TEMPERATURES = [0.0, 0.25, 0.5, 0.75, 1.0]
 
