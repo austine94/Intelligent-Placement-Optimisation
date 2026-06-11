@@ -156,6 +156,21 @@ This compares the six scenarios across the configured locally installed Ollama S
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`
 
+## Parameter accuracy standard-deviation tables
+
+After running both standalone parameter-selection accuracy sweeps, compute standard-deviation tables from the raw records with:
+
+```bash
+python paper_experiments/parameter_accuracy_selection_std_tables.py
+```
+
+This post-processing script reads `experiment_data/parameter_accuracy_model_sweep_results.json` and `experiment_data/parameter_accuracy_temperature_sweep_results.json` without rerunning any Ollama models. For each scenario and sweep column, it writes the population standard deviation of the combined alpha/beta `parameter_selection_score` to:
+
+- `experiment_data/parameter_accuracy_model_sweep_parameter_selection_standard_deviation_table.csv`
+- `experiment_data/parameter_accuracy_model_sweep_parameter_selection_standard_deviation_table.md`
+- `experiment_data/parameter_accuracy_temperature_sweep_parameter_selection_standard_deviation_table.csv`
+- `experiment_data/parameter_accuracy_temperature_sweep_parameter_selection_standard_deviation_table.md`
+
 ## Scalability experiment
 
 Run the cost-latency trade-off scalability experiment with:
