@@ -7,9 +7,9 @@ For each generated world seed and prompt scenario, this script:
 2) rewrites the canonical scenario prompt with llama3.2:latest to fuzz the wording while
    preserving the same optimisation requirements;
 3) asks aratan/qwen3-4b-tools:latest at temperature 0.2 to choose solve_allocation parameters;
-4) chooses parameters with deterministic keyword and semantic classifiers from the fuzzed prompt;
+4) chooses parameters with deterministic keyword and semantic-distance classifiers from the fuzzed prompt;
 5) samples one random alpha/beta pair from the optimal-value grid;
-6) falls back to the keyword classifier when the agentic tool call fails, so the
+6) falls back to semantic-distance matching when the agentic tool call fails, so the
    agentic baseline still yields a regret value for this experiment;
 7) computes metric-wise absolute percentage regret for cost, energy, and latency relative to the fixed optimum; and
 8) records whether each baseline selected the target alpha/beta parameters; and
@@ -33,6 +33,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from prompt_semantic_distance import (  # noqa: E402
+    Backend,
+    DEFAULT_SENTENCE_TRANSFORMER_MODEL,
+    reference_distances,
+)
 from parameter_selection_accuracy import (  # noqa: E402
     SYSTEM_PROMPT,
     TOOL_DEFINITION,
@@ -61,6 +66,11 @@ TEMPERATURE = 0.2
 PROMPT_FUZZ_MODEL = "llama3.2:latest"
 PROMPT_FUZZ_TEMPERATURE = 0.8
 MAX_DATACENTRES = 9999
+SEMANTIC_DISTANCE_BACKEND = os.environ.get("PROMPT_SEMANTIC_DISTANCE_BACKEND", "auto")
+SEMANTIC_DISTANCE_MODEL = os.environ.get(
+    "PROMPT_SEMANTIC_DISTANCE_MODEL",
+    DEFAULT_SENTENCE_TRANSFORMER_MODEL,
+)
 
 BASELINE_COLUMNS = [
     f"Agentic {MODEL} temp={TEMPERATURE}",
@@ -92,46 +102,45 @@ KEYWORD_RULES = [
     ("focus_latency", ("latency", "experience", "responsive", "speed", "fast", "performance")),
 ]
 
-SEMANTIC_DIMENSION_TERMS = {
-    "cost": {
-        "cost": 2.0,
-        "financial": 2.0,
-        "budget": 1.5,
-        "controlled": 1.0,
-        "minimising": 0.5,
-        "minimizing": 0.5,
-        "priority": 0.5,
-        "cheap": 1.5,
-    },
-    "energy": {
-        "energy": 2.0,
-        "usage": 0.5,
-        "green": 2.0,
-        "greener": 2.0,
-        "carbon": 1.5,
-        "sustainable": 1.5,
-        "minimise": 0.5,
-        "minimize": 0.5,
-    },
-    "latency": {
-        "latency": 2.0,
-        "experience": 2.0,
-        "user": 1.0,
-        "responsive": 1.5,
-        "performance": 1.5,
-        "fast": 1.5,
-        "lowest": 1.0,
-        "acceptable": 0.5,
-        "poor": 0.5,
-    },
-}
+SEMANTIC_DISTANCE_WARNED = False
 
-SEMANTIC_DIMENSION_TO_SCENARIO = {
-    "cost": "focus_cost",
-    "energy": "focus_energy",
-    "latency": "focus_latency",
-}
-SEMANTIC_TIE_BREAK_ORDER = ["cost", "energy", "latency"]
+
+def semantic_distance_backend() -> Backend:
+    """Return the configured semantic-distance backend, validating env overrides."""
+    if SEMANTIC_DISTANCE_BACKEND == "auto":
+        return "auto"
+    if SEMANTIC_DISTANCE_BACKEND == "sentence-transformers":
+        return "sentence-transformers"
+    if SEMANTIC_DISTANCE_BACKEND == "tfidf":
+        return "tfidf"
+    raise ValueError(
+        "PROMPT_SEMANTIC_DISTANCE_BACKEND must be one of: auto, sentence-transformers, tfidf"
+    )
+
+
+def scenario_semantic_distances(prompt: str) -> tuple[dict[str, float], str]:
+    """Return semantic distances from a prompt to each canonical scenario prompt."""
+    global SEMANTIC_DISTANCE_WARNED
+    distances, backend_used = reference_distances(
+        prompt,
+        {scenario: TEST_PROMPTS[scenario] for scenario in SCENARIO_ORDER},
+        backend=semantic_distance_backend(),
+        model_name=SEMANTIC_DISTANCE_MODEL,
+        warn_on_fallback=not SEMANTIC_DISTANCE_WARNED,
+    )
+    if backend_used == "tfidf" and semantic_distance_backend() == "auto":
+        SEMANTIC_DISTANCE_WARNED = True
+    return distances, backend_used
+
+
+def closest_semantic_scenario(prompt: str) -> tuple[str, dict[str, float], str]:
+    """Choose the scenario whose canonical prompt is closest by semantic distance."""
+    distances, backend_used = scenario_semantic_distances(prompt)
+    selected_scenario = min(
+        SCENARIO_ORDER,
+        key=lambda scenario: (distances[scenario], SCENARIO_ORDER.index(scenario)),
+    )
+    return selected_scenario, distances, backend_used
 
 
 def build_average_regret_table(results: dict[str, Any]) -> list[dict[str, str]]:
@@ -202,8 +211,8 @@ def score_record_parameter_selection(
 ) -> None:
     """Store alpha/beta correctness for the parameters actually selected by a baseline.
 
-    Agentic failures are scored as incorrect rather than scoring the keyword fallback that
-    is used solely to keep the regret comparison table complete.
+    Agentic failures are scored as incorrect rather than scoring the semantic-distance fallback
+    that is used solely to keep the regret comparison table complete.
     """
     record.update(score_parameter_selection(scenario, selected_args))
 
@@ -290,23 +299,28 @@ def keyword_classifier(prompt: str) -> dict[str, Any]:
     return dict(OPTIMAL_PARAMS["focus_cost"])
 
 
+def semantic_selection(prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Return semantic-distance-selected parameters plus metadata."""
+    selected_scenario, distances, backend_used = closest_semantic_scenario(prompt)
+    selected_params = dict(OPTIMAL_PARAMS[selected_scenario])
+    metadata = {
+        "semantic_distance_backend": backend_used,
+        "semantic_distance_model": SEMANTIC_DISTANCE_MODEL if backend_used == "sentence-transformers" else "tfidf",
+        "semantic_distance_selected_scenario": selected_scenario,
+        "semantic_distance_to_scenarios": distances,
+    }
+    return selected_params, metadata
+
+
 def semantic_classifier(prompt: str) -> dict[str, Any]:
-    """Select a deterministic single-objective profile using lightweight semantic scores.
+    """Select parameters for the canonical scenario with minimum semantic distance.
 
-    The classifier intentionally resolves the prompt to one dominant objective dimension, so
-    multi-objective tradeoff language is not represented as a combined parameter choice.
+    Unlike the keyword baseline, this classifier compares the prompt with every
+    canonical scenario prompt, including the three trade-off scenarios, and returns
+    the parameter profile for the closest scenario.
     """
-    prompt_lower = prompt.lower()
-    scores: dict[str, float] = {}
-
-    for dimension, terms in SEMANTIC_DIMENSION_TERMS.items():
-        scores[dimension] = sum(weight for term, weight in terms.items() if term in prompt_lower)
-
-    best_dimension = max(
-        SEMANTIC_TIE_BREAK_ORDER,
-        key=lambda dimension: (scores[dimension], -SEMANTIC_TIE_BREAK_ORDER.index(dimension)),
-    )
-    return dict(OPTIMAL_PARAMS[SEMANTIC_DIMENSION_TO_SCENARIO[best_dimension]])
+    selected_params, _ = semantic_selection(prompt)
+    return selected_params
 
 
 def random_parameter_selection(rep: int, scenario: str) -> dict[str, Any]:
@@ -330,13 +344,19 @@ async def evaluate_parameter_baseline(
     sample_index: int | None = None,
 ) -> dict[str, Any]:
     """Run solve_allocation for selected parameters and compute regret."""
-    selected_params = parameter_selector()
+    semantic_metadata: dict[str, Any] = {}
+    if baseline_name == BASELINE_COLUMNS[2] and prompt_record.get("prompt"):
+        selected_params, semantic_metadata = semantic_selection(str(prompt_record["prompt"]))
+    else:
+        selected_params = parameter_selector()
+
     record: dict[str, Any] = {
         "rep": rep,
         "seed": rep,
         "baseline": baseline_name,
         "prompt_category": scenario,
         "selected_tool_args": selected_params,
+        **semantic_metadata,
         **prompt_record,
         **optimal_output,
     }
@@ -372,37 +392,43 @@ async def evaluate_parameter_baseline(
         return record
 
 
-async def apply_agent_keyword_fallback(
+async def apply_agent_semantic_fallback(
     session: Any,
     record: dict[str, Any],
     prompt: str,
     reason: str,
 ) -> dict[str, Any]:
-    """Use the keyword classifier when the agentic tool call fails in this experiment.
+    """Use semantic-distance matching when the agentic tool call fails.
 
     This fallback is intentionally scoped to the regret baseline comparison because the
     experiment needs a regret value for every generated prompt. The raw record keeps the
-    original agent failure reason and marks that the reported regret came from the
-    keyword fallback rather than a successful agent tool call.
+    original agent failure reason and marks that the reported regret came from semantic
+    matching rather than a successful agent tool call.
     """
     record["agent_tool_call_failed"] = True
     record["agent_tool_call_failure_reason"] = reason
     record["fallback_used"] = True
-    record["fallback_baseline"] = "Keyword classifier"
+    record["fallback_baseline"] = "Semantic classifier"
 
     if record.get("parameter_selection_score") is None:
         score_record_parameter_selection(record, record["prompt_category"], None)
 
-    fallback_params = keyword_classifier(prompt)
-    record["fallback_tool_args"] = fallback_params
-
     try:
+        fallback_params, semantic_metadata = semantic_selection(prompt)
+        record["fallback_tool_args"] = fallback_params
+        record["fallback_semantic_distance_backend"] = semantic_metadata["semantic_distance_backend"]
+        record["fallback_semantic_distance_model"] = semantic_metadata["semantic_distance_model"]
+        record["fallback_semantic_distance_selected_scenario"] = semantic_metadata[
+            "semantic_distance_selected_scenario"
+        ]
+        record["fallback_semantic_distance_to_scenarios"] = semantic_metadata["semantic_distance_to_scenarios"]
+
         fallback_metrics, fallback_objective = await call_solve_allocation(session, fallback_params)
         record["fallback_metrics"] = fallback_metrics
         record["fallback_objective"] = fallback_objective
 
         if fallback_objective is None:
-            record["error"] = "Keyword fallback could not parse selected objective"
+            record["error"] = "Semantic fallback could not parse selected objective"
             return record
 
         record.update(
@@ -415,7 +441,7 @@ async def apply_agent_keyword_fallback(
         )
         return record
     except Exception as exc:
-        record["error"] = f"Keyword fallback error after agent failure ({reason}): {exc}"
+        record["error"] = f"Semantic fallback error after agent failure ({reason}): {exc}"
         return record
 
 
@@ -461,7 +487,7 @@ async def evaluate_agentic_baseline(
 
         tool_calls = response["message"].get("tool_calls", [])
         if not tool_calls:
-            return await apply_agent_keyword_fallback(session, record, prompt, "No tool call from agent")
+            return await apply_agent_semantic_fallback(session, record, prompt, "No tool call from agent")
 
         tool_call = tool_calls[0]
         agent_fn_name = tool_call["function"]["name"]
@@ -470,7 +496,7 @@ async def evaluate_agentic_baseline(
         score_record_parameter_selection(record, scenario, agent_fn_args)
 
         if agent_fn_name != "solve_allocation":
-            return await apply_agent_keyword_fallback(
+            return await apply_agent_semantic_fallback(
                 session,
                 record,
                 prompt,
@@ -482,7 +508,7 @@ async def evaluate_agentic_baseline(
         record["agent_objective"] = agent_objective
 
         if agent_objective is None:
-            return await apply_agent_keyword_fallback(session, record, prompt, "Could not parse agent objective")
+            return await apply_agent_semantic_fallback(session, record, prompt, "Could not parse agent objective")
 
         record.update(
             compute_regret(
@@ -494,7 +520,7 @@ async def evaluate_agentic_baseline(
         )
         return record
     except Exception as exc:
-        return await apply_agent_keyword_fallback(session, record, prompt, f"Agent run error: {exc}")
+        return await apply_agent_semantic_fallback(session, record, prompt, f"Agent run error: {exc}")
 
 
 async def run_regret_baseline_comparison() -> None:
@@ -510,6 +536,7 @@ async def run_regret_baseline_comparison() -> None:
     print(f"🤖 Agentic model: {MODEL}")
     print(f"🌡️ Agentic temperature: {TEMPERATURE}")
     print(f"🧪 Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}")
+    print(f"📏 Semantic-distance backend: {semantic_distance_backend()} model={SEMANTIC_DISTANCE_MODEL}")
     print("🎲 Random samples per generated workload/scenario: 1")
     print(f"🎯 Optimal parameters: {OPTIMAL_PARAMS}")
     print(f"🎛️ Random parameter grid: {PARAMETER_GRID}")
@@ -574,7 +601,7 @@ async def run_regret_baseline_comparison() -> None:
                     if agent_record.get("metric_regret_percent") is None:
                         print(" ❌")
                     elif agent_record.get("fallback_used"):
-                        print(" ⚠️ keyword fallback")
+                        print(" ⚠️ semantic fallback")
                     else:
                         print(" ✅")
 

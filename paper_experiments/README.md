@@ -70,7 +70,7 @@ Run the regret baseline comparison with:
 python paper_experiments/regret_baseline_comparison.py
 ```
 
-This compares the six scenarios over 250 generated workloads. For each workload/scenario pair, the script first rewrites the canonical scenario prompt with `llama3.2:latest` to create a fuzzed prompt that preserves the same optimisation requirements. It then evaluates the agentic `aratan/qwen3-4b-tools:latest` baseline at temperature `0.2` using the shared parameter-selection prompt/tool contract, the deterministic keyword classifier, the lightweight semantic classifier, and random parameter selection against that fuzzed prompt. If the agentic baseline fails to produce a usable `solve_allocation` tool call, this experiment only falls back to the keyword classifier so the agentic-baseline row still has a regret value; raw JSON records mark the fallback and keep the original agent failure reason. Raw JSON records also include both the original and fuzzed prompts, plus prompt-generation metadata. The script writes raw JSON results to `experiment_data/regret_baseline_comparison_results.json`, and writes average metric-wise absolute regret percentage tables to:
+This compares the six scenarios over 250 generated workloads. For each workload/scenario pair, the script first rewrites the canonical scenario prompt with `llama3.2:latest` to create a fuzzed prompt that preserves the same optimisation requirements. It then evaluates the agentic `aratan/qwen3-4b-tools:latest` baseline at temperature `0.2` using the shared parameter-selection prompt/tool contract, the deterministic keyword classifier, a semantic-distance classifier, and random parameter selection against that fuzzed prompt. The semantic-distance classifier compares the fuzzed prompt with all six canonical scenario prompts, chooses the closest scenario, and uses that scenario's fixed optimal parameter profile. It uses the same shared semantic-distance backend as the varying-prompt prompt-distance plotter: `sentence-transformers/all-MiniLM-L6-v2` when available, falling back to deterministic TF-IDF word/character n-gram cosine distance unless `PROMPT_SEMANTIC_DISTANCE_BACKEND=sentence-transformers` is set. If the agentic baseline fails to produce a usable `solve_allocation` tool call, this experiment falls back to the semantic-distance classifier so the agentic-baseline row still has a regret value; raw JSON records mark the fallback, keep the original agent failure reason, and store the fallback semantic-distance metadata. Raw JSON records also include both the original and fuzzed prompts, prompt-generation metadata, semantic-distance metadata for the semantic-distance baseline, and semantic-distance fallback metadata when the agentic baseline falls back. The script writes raw JSON results to `experiment_data/regret_baseline_comparison_results.json`, and writes average metric-wise absolute regret percentage tables to:
 
 - `experiment_data/regret_baseline_comparison_average_regret_table.csv`
 - `experiment_data/regret_baseline_comparison_average_regret_table.md`
@@ -115,6 +115,24 @@ This follows the regret model sweep setup at temperature `0.2`, but for each gen
 
 - `experiment_data/varying_prompt_regret_model_sweep_average_regret_table.csv`
 - `experiment_data/varying_prompt_regret_model_sweep_average_regret_table.md`
+
+The generated prompt variants are stored in the raw JSON records under `prompt`; the corresponding canonical prompt is stored under `original_prompt`, with `prompt_generation_model`, `prompt_generation_temperature`, and `prompt_generation_seed` metadata. Because the same generated prompt is evaluated once per model, post-processing scripts should deduplicate prompt records by scenario and prompt-generation seed before counting the 250 generated prompts per scenario.
+
+## Varying-prompt prompt-distance plots
+
+After running the varying-prompt regret model sweep, compute the average semantic distance between each scenario's canonical prompt and its 250 generated prompt variants with:
+
+```bash
+python paper_experiments/plot_varying_prompt_semantic_distance.py
+```
+
+By default, this script reads `experiment_data/varying_prompt_regret_model_sweep_results.json`, deduplicates the per-model prompt records back to one generated prompt per scenario/repetition, and uses the same shared semantic-distance backend as the non-AI semantic-distance baseline: `sentence-transformers/all-MiniLM-L6-v2` when available, with a deterministic TF-IDF word/character n-gram cosine-distance fallback. Use `--backend sentence-transformers` to require embedding-based distances or `--backend tfidf` to force the no-dependency fallback. It writes:
+
+- `experiment_data/varying_prompt_semantic_distance_details.csv`
+- `experiment_data/varying_prompt_semantic_distance_summary.csv`
+- `experiment_data/varying_prompt_semantic_distance_summary.md`
+- `paper_plots/varying_prompt_semantic_distance_by_scenario.pdf`
+- six individual bar plots in `paper_plots/varying_prompt_semantic_distance_by_scenario/`
 
 ## Varying-prompt regret model-sweep parameter-selection accuracy
 
