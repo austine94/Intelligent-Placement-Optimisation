@@ -143,6 +143,16 @@ This compares the six scenarios across the temperature sweep `0.0, 0.25, 0.5, 0.
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.md`
 
+After running the sweep, generate a temperature-on-x-axis line figure with one line per scenario with:
+
+```bash
+python paper_experiments/plot_parameter_accuracy_temperature_sweep.py
+```
+
+The plotting script reads `experiment_data/parameter_accuracy_temperature_sweep_results.json` without rerunning Ollama models and writes:
+
+- `paper_plots/parameter_accuracy_temperature_sweep_by_scenario.pdf`
+
 ## Parameter accuracy model sweep
 
 Run the parameter-selection accuracy model sweep with:
@@ -170,6 +180,26 @@ This post-processing script reads `experiment_data/parameter_accuracy_model_swee
 - `experiment_data/parameter_accuracy_model_sweep_parameter_selection_standard_deviation_table.md`
 - `experiment_data/parameter_accuracy_temperature_sweep_parameter_selection_standard_deviation_table.csv`
 - `experiment_data/parameter_accuracy_temperature_sweep_parameter_selection_standard_deviation_table.md`
+
+After generating the standard-deviation tables, create a temperature-on-x-axis standard-deviation figure with one line per scenario with:
+
+```bash
+python paper_experiments/plot_parameter_accuracy_temperature_sweep_std.py
+```
+
+The plotting script reads `experiment_data/parameter_accuracy_temperature_sweep_parameter_selection_standard_deviation_table.csv` and writes:
+
+- `paper_plots/parameter_accuracy_temperature_sweep_standard_deviation_by_scenario.pdf`
+
+To combine mean selection accuracy and standard deviation into one dual-axis figure, run:
+
+```bash
+python paper_experiments/plot_parameter_accuracy_temperature_sweep_combined.py
+```
+
+The combined plotting script reads both the temperature-sweep raw JSON and standard-deviation CSV. It writes a figure with mean accuracy on the left y-axis, standard deviation on the right y-axis, one colour per scenario, solid lines for means, and dashed lines for standard deviations:
+
+- `paper_plots/parameter_accuracy_temperature_sweep_combined_by_scenario.pdf`
 
 ## Scalability experiment
 
