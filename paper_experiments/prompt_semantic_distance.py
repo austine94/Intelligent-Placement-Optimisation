@@ -34,7 +34,7 @@ def cosine_distance(left: Iterable[float], right: Iterable[float]) -> float:
     if left_norm == 0 or right_norm == 0:
         return 1.0
     similarity = dot / (left_norm * right_norm)
-    return max(0.0, min(1.0, 1.0 - similarity))
+    return float(max(0.0, min(1.0, 1.0 - similarity)))
 
 
 @lru_cache(maxsize=4)
@@ -130,7 +130,7 @@ def sparse_cosine_distance(left: Mapping[str, float], right: Mapping[str, float]
     if left_norm == 0 or right_norm == 0:
         return 1.0
     similarity = dot / (left_norm * right_norm)
-    return max(0.0, min(1.0, 1.0 - similarity))
+    return float(max(0.0, min(1.0, 1.0 - similarity)))
 
 
 def tfidf_pair_distances(text_pairs: Sequence[tuple[str, str]]) -> list[float]:

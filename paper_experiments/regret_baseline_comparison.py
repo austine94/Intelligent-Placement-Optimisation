@@ -128,6 +128,7 @@ def scenario_semantic_distances(prompt: str) -> tuple[dict[str, float], str]:
         model_name=SEMANTIC_DISTANCE_MODEL,
         warn_on_fallback=not SEMANTIC_DISTANCE_WARNED,
     )
+    distances = {scenario: float(distance) for scenario, distance in distances.items()}
     if backend_used == "tfidf" and semantic_distance_backend() == "auto":
         SEMANTIC_DISTANCE_WARNED = True
     return distances, backend_used
@@ -202,6 +203,15 @@ def print_regret_table(table_rows: list[dict[str, str]]) -> None:
     print("-+-".join("-" * width for width in widths))
     for row in rows:
         print(format_row(row))
+
+
+def json_serializable_default(value: Any) -> Any:
+    """Convert NumPy-style scalar/array values before writing raw experiment JSON."""
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    if isinstance(value, set):
+        return sorted(value)
+    raise TypeError(f"Object of type {value.__class__.__name__} is not JSON serializable")
 
 
 def score_record_parameter_selection(
@@ -646,7 +656,7 @@ async def run_regret_baseline_comparison() -> None:
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
-        json.dump(results_db, f, indent=2)
+        json.dump(results_db, f, indent=2, default=json_serializable_default)
 
     regret_table_rows = build_average_regret_table(results_db)
     write_regret_table_csv(regret_table_rows)
