@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Plot parameter-selection accuracy by temperature with one line per model.
+"""Plot parameter-selection accuracy by temperature with one line per scenario.
 
 This post-processing script reads the raw JSON produced by
 ``parameter_accuracy_temperature_sweep.py`` and writes a paper-ready PDF line
@@ -21,13 +21,13 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from parameter_accuracy_temperature_sweep import MODEL, RESULTS_FILE, TEMPERATURES  # noqa: E402
-from parameter_selection_accuracy import average  # noqa: E402
+from parameter_accuracy_temperature_sweep import RESULTS_FILE, TEMPERATURES  # noqa: E402
+from parameter_selection_accuracy import SCENARIO_LABELS, SCENARIO_ORDER, average  # noqa: E402
 
 PLOTS_DIR = SCRIPT_DIR / "paper_plots"
-OUTPUT_FILE = PLOTS_DIR / "parameter_accuracy_temperature_sweep_by_model.pdf"
+OUTPUT_FILE = PLOTS_DIR / "parameter_accuracy_temperature_sweep_by_scenario.pdf"
 
-MODEL_COLOURS: list[tuple[float, float, float]] = [
+SCENARIO_COLOURS: list[tuple[float, float, float]] = [
     (0.12, 0.47, 0.71),
     (1.00, 0.50, 0.05),
     (0.17, 0.63, 0.17),
@@ -162,7 +162,7 @@ def _as_float(value: Any) -> float | None:
 
 def _collect_scores(
     destination: dict[str, dict[float, list[float]]],
-    model: str,
+    scenario: str,
     temperature: float,
     scenario_runs: Any,
 ) -> None:
@@ -176,47 +176,66 @@ def _collect_scores(
         score = _as_float(run.get("parameter_selection_score"))
         if score is None:
             continue
-        run_model = str(run.get("model") or model or MODEL)
+        run_scenario = str(run.get("prompt_category") or scenario)
         run_temperature = _as_float(run.get("temperature"))
-        destination[run_model][run_temperature if run_temperature is not None else temperature].append(score)
+        destination[run_scenario][run_temperature if run_temperature is not None else temperature].append(score)
 
 
-def aggregate_accuracy_by_model_temperature(results: dict[str, Any]) -> dict[str, list[tuple[float, float | None]]]:
-    """Aggregate mean parameter-selection accuracy for each model and temperature.
+def _collect_scenario_mapping(
+    destination: dict[str, dict[float, list[float]]],
+    temperature: float,
+    scenarios: dict[str, Any],
+) -> None:
+    """Collect scores from a ``scenario -> runs`` mapping at one temperature."""
+    for scenario, scenario_runs in scenarios.items():
+        _collect_scores(destination, scenario, temperature, scenario_runs)
 
-    The current temperature-sweep JSON is keyed as ``temperature -> scenario -> runs``
-    and contains one model. This function also accepts richer files keyed as
-    ``model -> temperature -> scenario -> runs`` or files with ``model`` stored on
-    each record, so the plotting script remains useful if the sweep is expanded
-    to multiple models.
+
+def aggregate_accuracy_by_scenario_temperature(results: dict[str, Any]) -> dict[str, list[tuple[float, float | None]]]:
+    """Aggregate mean parameter-selection accuracy for each scenario and temperature.
+
+    The current temperature-sweep JSON is keyed as ``temperature -> scenario -> runs``.
+    This function also accepts model-keyed variants such as
+    ``model -> temperature -> scenario -> runs`` or
+    ``temperature -> model -> scenario -> runs`` by pooling scores for the same
+    scenario and temperature across any models present in the file.
     """
     scores: dict[str, dict[float, list[float]]] = defaultdict(lambda: defaultdict(list))
 
     for outer_key, outer_value in results.items():
         outer_temperature = _as_float(outer_key)
         if outer_temperature is not None and isinstance(outer_value, dict):
-            for scenario_runs in outer_value.values():
-                _collect_scores(scores, MODEL, outer_temperature, scenario_runs)
+            for nested_key, nested_value in outer_value.items():
+                if isinstance(nested_value, list):
+                    _collect_scores(scores, nested_key, outer_temperature, nested_value)
+                elif isinstance(nested_value, dict):
+                    _collect_scenario_mapping(scores, outer_temperature, nested_value)
             continue
 
         if not isinstance(outer_value, dict):
             continue
 
-        model = str(outer_key)
         for temp_key, scenarios in outer_value.items():
             temperature = _as_float(temp_key)
             if temperature is None or not isinstance(scenarios, dict):
                 continue
-            for scenario_runs in scenarios.values():
-                _collect_scores(scores, model, temperature, scenario_runs)
+            _collect_scenario_mapping(scores, temperature, scenarios)
 
-    all_temperatures = sorted({temp for model_scores in scores.values() for temp in model_scores})
+    all_temperatures = sorted({temp for scenario_scores in scores.values() for temp in scenario_scores})
     if not all_temperatures:
         all_temperatures = [float(temperature) for temperature in TEMPERATURES]
 
+    scenario_order = [scenario for scenario in SCENARIO_ORDER if scenario in scores]
+    scenario_order.extend(scenario for scenario in scores if scenario not in scenario_order)
+
     series: dict[str, list[tuple[float, float | None]]] = {}
-    for model, model_scores in scores.items():
-        series[model] = [(temperature, average(model_scores.get(temperature, []))) for temperature in all_temperatures]
+    for scenario in scenario_order:
+        scenario_scores = scores[scenario]
+        scenario_label = SCENARIO_LABELS.get(scenario, scenario)
+        series[scenario_label] = [
+            (temperature, average(scenario_scores.get(temperature, [])))
+            for temperature in all_temperatures
+        ]
 
     return series
 
@@ -225,7 +244,7 @@ def draw_temperature_accuracy_plot(
     series: dict[str, list[tuple[float, float | None]]],
     output_file: Path = OUTPUT_FILE,
 ) -> None:
-    """Draw the line plot with temperature on x-axis and one line per model."""
+    """Draw the line plot with temperature on x-axis and one line per scenario."""
     if not series:
         raise ValueError("No parameter-selection scores found to plot.")
 
@@ -269,8 +288,8 @@ def draw_temperature_accuracy_plot(
         y = plot_y + (value / y_max) * plot_height
         return x, y
 
-    for index, (model, values) in enumerate(series.items()):
-        colour = MODEL_COLOURS[index % len(MODEL_COLOURS)]
+    for index, (scenario, values) in enumerate(series.items()):
+        colour = SCENARIO_COLOURS[index % len(SCENARIO_COLOURS)]
         points = [map_point(temperature, value) for temperature, value in values if value is not None]
         page.polyline(points, width=1.35, colour=colour)
         for x, y in points:
@@ -278,13 +297,13 @@ def draw_temperature_accuracy_plot(
 
     legend_x = 604
     legend_y = 394
-    page.text(legend_x, legend_y + 20, "Model", size=11)
-    for index, model in enumerate(series):
+    page.text(legend_x, legend_y + 20, "Scenario", size=11)
+    for index, scenario in enumerate(series):
         y = legend_y - index * 20
-        colour = MODEL_COLOURS[index % len(MODEL_COLOURS)]
+        colour = SCENARIO_COLOURS[index % len(SCENARIO_COLOURS)]
         page.line(legend_x, y, legend_x + 22, y, width=1.4, colour=colour)
         page.marker(legend_x + 11, y, colour)
-        page.text(legend_x + 30, y - 4, model, size=8)
+        page.text(legend_x + 30, y - 4, scenario, size=8)
 
     page.save(output_file)
     print(f"Saved plot: {output_file}")
@@ -293,7 +312,7 @@ def draw_temperature_accuracy_plot(
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Plot parameter-selection accuracy by temperature with one line per model."
+        description="Plot parameter-selection accuracy by temperature with one line per scenario."
     )
     parser.add_argument(
         "--results-file",
@@ -314,7 +333,7 @@ def main() -> None:
     """Load results, aggregate scores, and write the PDF figure."""
     args = parse_args()
     results = load_results(args.results_file)
-    series = aggregate_accuracy_by_model_temperature(results)
+    series = aggregate_accuracy_by_scenario_temperature(results)
     draw_temperature_accuracy_plot(series, args.output_file)
 
 
