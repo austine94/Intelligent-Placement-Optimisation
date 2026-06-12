@@ -6,8 +6,9 @@ This post-processing script combines the mean accuracy JSON produced by
 ``parameter_accuracy_temperature_sweep.py`` with the standard-deviation CSV
 produced by ``parameter_accuracy_selection_std_tables.py``. It writes one
 paper-ready PDF with mean selection accuracy on the left y-axis, standard
-deviation on the right y-axis, and one colour per scenario. Mean lines are
-solid; standard-deviation lines are dashed.
+deviation on the right y-axis, and one colour per scenario. Both y-axes use
+the same 0 to 1.0 range. Mean lines are solid; standard-deviation lines are
+dashed.
 """
 
 from __future__ import annotations
@@ -37,23 +38,6 @@ OUTPUT_FILE = PLOTS_DIR / "parameter_accuracy_temperature_sweep_combined_by_scen
 Series = dict[str, list[tuple[float, float | None]]]
 
 
-def _nice_axis_max(value: float) -> float:
-    """Return a readable upper bound for a plot axis."""
-    if value <= 0:
-        return 0.1
-    exponent = math.floor(math.log10(value))
-    fraction = value / (10**exponent)
-    if fraction <= 1:
-        nice_fraction = 1
-    elif fraction <= 2:
-        nice_fraction = 2
-    elif fraction <= 5:
-        nice_fraction = 5
-    else:
-        nice_fraction = 10
-    return nice_fraction * (10**exponent)
-
-
 def _series_lookup(series: Series, scenario: str, temperature: float) -> float | None:
     """Return a series value for a scenario/temperature pair when present."""
     for point_temperature, value in series.get(scenario, []):
@@ -79,23 +63,6 @@ def _dashed_polyline(
         commands.append(f"{x:.2f} {y:.2f} l")
     commands.append("S [] 0 d")
     page.commands.append(" ".join(commands))
-
-
-def _dashed_line(
-    page: PdfPage,
-    x1: float,
-    y1: float,
-    x2: float,
-    y2: float,
-    width: float = 1.35,
-    colour: tuple[float, float, float] = (0, 0, 0),
-) -> None:
-    """Draw a dashed line segment on the small PDF canvas."""
-    r, g, b = colour
-    page.commands.append(
-        f"{r:.2f} {g:.2f} {b:.2f} RG {width:.2f} w [4 3] 0 d "
-        f"{x1:.2f} {y1:.2f} m {x2:.2f} {y2:.2f} l S [] 0 d"
-    )
 
 
 def draw_combined_plot(
@@ -131,8 +98,7 @@ def draw_combined_plot(
         x_max += 0.5
 
     left_y_max = 1.0
-    std_values = [value for values in std_series.values() for _, value in values if value is not None]
-    right_y_max = _nice_axis_max(max(std_values) * 1.08) if std_values else 0.1
+    right_y_max = 1.0
 
     page = PdfPage(width=820, height=528)
     page.text(54, 496, "Parameter-selection accuracy and variability by temperature", size=16)
@@ -211,14 +177,6 @@ def draw_combined_plot(
         page.line(legend_x, y, legend_x + 22, y, width=1.4, colour=colour)
         page.marker(legend_x + 11, y, colour)
         page.text(legend_x + 30, y - 4, scenario, size=8)
-
-    # Line-style legend.
-    style_y = legend_y - len(scenario_order) * 20 - 18
-    page.text(legend_x, style_y + 20, "Line style", size=11)
-    page.line(legend_x, style_y, legend_x + 22, style_y, width=1.4)
-    page.text(legend_x + 30, style_y - 4, "Mean accuracy", size=8)
-    _dashed_line(page, legend_x, style_y - 20, legend_x + 22, style_y - 20, width=1.4)
-    page.text(legend_x + 30, style_y - 24, "Std. dev.", size=8)
 
     page.save(output_file)
     print(f"Saved plot: {output_file}")
