@@ -25,6 +25,7 @@ from parameter_selection_accuracy import (
 )
 
 CORRECT_TOOL_NAME = "solve_allocation"
+MAX_AGENT_TRIES = 3
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 EXPERIMENT_DATA_DIR = SCRIPT_DIR / "experiment_data"
@@ -64,6 +65,11 @@ def score_tool_call(tool_names: list[str], correct_tool_name: str = CORRECT_TOOL
         "correct_tool_called": correct_tool_called,
         "tool_call_failure": not correct_tool_called,
     }
+
+
+def seed_for_attempt(rep: int, attempt_index: int, n_reps: int = N_REPS) -> int:
+    """Return a stable, distinct seed for a retry attempt within a repetition."""
+    return rep + (attempt_index * n_reps)
 
 
 def average(values: list[float]) -> float | None:
@@ -141,6 +147,7 @@ async def run_tool_calling_reliability() -> None:
     print(f"🤖 Models: {MODELS}")
     print(f"🌡️ Temperature: {TEMPERATURE}")
     print(f"🛠️ Correct tool: {CORRECT_TOOL_NAME}")
+    print(f"🔁 Agent tries per prompt: {MAX_AGENT_TRIES}")
     print("🚫 This experiment records the selected tool only; it does not execute tools or call Gurobi.")
 
     results_db: dict[str, dict[str, list[dict[str, Any]]]] = {
@@ -159,10 +166,13 @@ async def run_tool_calling_reliability() -> None:
                 record: dict[str, Any] = {
                     "rep": rep,
                     "seed": rep,
+                    "base_seed": rep,
                     "model": model,
                     "temperature": TEMPERATURE,
                     "prompt_category": scenario,
                     "correct_tool_name": CORRECT_TOOL_NAME,
+                    "max_agent_tries": MAX_AGENT_TRIES,
+                    "attempts": [],
                 }
 
                 messages = [
@@ -170,27 +180,65 @@ async def run_tool_calling_reliability() -> None:
                     {"role": "user", "content": prompt},
                 ]
 
-                try:
-                    response = ollama.chat(
-                        model=model,
-                        messages=messages,
-                        tools=TOOL_DEFINITION,
-                        options={"seed": rep, "temperature": TEMPERATURE},
-                    )
-                    record.update(score_tool_call(selected_tool_names(response)))
-                    results_db[model][scenario].append(record)
+                successful_attempt: dict[str, Any] | None = None
+                last_scored_attempt: dict[str, Any] | None = None
 
-                    if record["tool_call_failure"]:
-                        first_tool_name = record["first_tool_name"] or "No Tool"
-                        print(f" ❌ failed ({first_tool_name})")
-                    else:
-                        print(" ✅ correct")
+                for attempt_index in range(MAX_AGENT_TRIES):
+                    attempt_number = attempt_index + 1
+                    attempt_seed = seed_for_attempt(rep, attempt_index)
+                    attempt_record: dict[str, Any] = {
+                        "attempt": attempt_number,
+                        "seed": attempt_seed,
+                    }
 
-                except Exception as exc:
-                    record["error"] = f"Agent run error: {exc}"
-                    record.update(score_tool_call([]))
-                    results_db[model][scenario].append(record)
-                    print(f" ❌ Agent error: {exc}")
+                    try:
+                        response = ollama.chat(
+                            model=model,
+                            messages=messages,
+                            tools=TOOL_DEFINITION,
+                            options={"seed": attempt_seed, "temperature": TEMPERATURE},
+                        )
+                        attempt_record.update(score_tool_call(selected_tool_names(response)))
+                    except Exception as exc:
+                        attempt_record["error"] = f"Agent run error: {exc}"
+                        attempt_record.update(score_tool_call([]))
+
+                    record["attempts"].append(attempt_record)
+                    last_scored_attempt = attempt_record
+
+                    if attempt_record["correct_tool_called"]:
+                        successful_attempt = attempt_record
+                        break
+
+                final_attempt = successful_attempt or last_scored_attempt or score_tool_call([])
+                record.update(
+                    {
+                        "seed": final_attempt.get("seed", rep),
+                        "successful_seed": (
+                            successful_attempt["seed"] if successful_attempt is not None else None
+                        ),
+                        "selected_tool_names": final_attempt["selected_tool_names"],
+                        "first_tool_name": final_attempt["first_tool_name"],
+                        "correct_tool_called": successful_attempt is not None,
+                        "tool_call_failure": successful_attempt is None,
+                        "successful_attempt": (
+                            successful_attempt["attempt"] if successful_attempt is not None else None
+                        ),
+                        "num_attempts": len(record["attempts"]),
+                    }
+                )
+
+                errors = [attempt["error"] for attempt in record["attempts"] if "error" in attempt]
+                if errors:
+                    record["errors"] = errors
+
+                results_db[model][scenario].append(record)
+
+                if record["tool_call_failure"]:
+                    first_tool_name = record["first_tool_name"] or "No Tool"
+                    print(f" ❌ failed after {record['num_attempts']} tries ({first_tool_name})")
+                else:
+                    print(f" ✅ correct on try {record['successful_attempt']}")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
