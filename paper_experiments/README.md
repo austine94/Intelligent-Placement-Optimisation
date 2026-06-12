@@ -143,6 +143,16 @@ This compares the six scenarios across the temperature sweep `0.0, 0.25, 0.5, 0.
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_temperature_sweep_accuracy_table.md`
 
+After running the sweep, generate a temperature-on-x-axis line figure with one line per model with:
+
+```bash
+python paper_experiments/plot_parameter_accuracy_temperature_sweep.py
+```
+
+The plotting script reads `experiment_data/parameter_accuracy_temperature_sweep_results.json` without rerunning Ollama models and writes:
+
+- `paper_plots/parameter_accuracy_temperature_sweep_by_model.pdf`
+
 ## Parameter accuracy model sweep
 
 Run the parameter-selection accuracy model sweep with:
