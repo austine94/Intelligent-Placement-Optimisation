@@ -184,6 +184,18 @@ This compares the six scenarios across the configured locally installed Ollama S
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`
 
+## Tool-calling reliability model sweep
+
+Run the tool-calling reliability model sweep with:
+
+```bash
+python paper_experiments/tool_calling_reliability.py
+```
+
+This uses the same six fixed prompts, model list, system prompt, and single `solve_allocation` tool definition as the parameter-selection accuracy model sweep. It only intercepts the returned tool-call metadata and never executes the selected tool, so it does not invoke Gurobi or the allocation solver. Each repetition is marked as a failure when the model does not call `solve_allocation` as the first tool call. The script writes raw JSON results to `experiment_data/tool_calling_reliability_results.json`, and writes failure-proportion tables to:
+
+- `experiment_data/tool_calling_reliability_failure_table.csv`
+- `experiment_data/tool_calling_reliability_failure_table.md`
 
 ## Stress parameter accuracy model sweep
 
