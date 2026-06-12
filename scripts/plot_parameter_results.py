@@ -85,8 +85,9 @@ def plot_parameters():
         hue="Strategy", palette="viridis", jitter=True, alpha=0.6, legend=False
     )
     
-    plt.xlabel("Scenario", fontsize=12)
-    plt.ylabel("Alpha Value", fontsize=12)
+    plt.xlabel("Scenario", fontsize=14)
+    plt.ylabel("Alpha Value", fontsize=14)
+    plt.tick_params(axis="both", labelsize=11)
     
     filename_alpha = "parameter_consistency_alpha.png"
     plt.tight_layout()
@@ -107,8 +108,9 @@ def plot_parameters():
         hue="Strategy", palette="magma", jitter=True, alpha=0.6, legend=False
     )
     
-    plt.xlabel("Scenario", fontsize=12)
-    plt.ylabel("Beta Value (0=Green, 1=Cost)", fontsize=12)
+    plt.xlabel("Scenario", fontsize=14)
+    plt.ylabel("Beta Value (0=Green, 1=Cost)", fontsize=14)
+    plt.tick_params(axis="both", labelsize=11)
     plt.ylim(-0.1, 1.1)  # Lock Y-axis since Beta is 0-1
     
     filename_beta = "parameter_consistency_beta.png"

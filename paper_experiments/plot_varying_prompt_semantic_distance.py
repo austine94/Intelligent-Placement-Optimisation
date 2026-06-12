@@ -417,7 +417,7 @@ def draw_combined_bar_plot(summary_rows: list[dict[str, Any]], output_file: Path
         value = y_max * tick / 5
         y = plot_y + (value / y_max) * plot_height
         page.line(plot_x - 4, y, plot_x, y, width=0.8)
-        page.text(42, y - 4, f"{value:.2f}", size=8)
+        page.text(42, y - 4, f"{value:.2f}", size=10)
         if tick:
             page.line(plot_x, y, plot_x + plot_width, y, width=0.25, colour=(0.82, 0.82, 0.82))
 
@@ -428,14 +428,14 @@ def draw_combined_bar_plot(summary_rows: list[dict[str, Any]], output_file: Path
         bar_height = (value / y_max) * plot_height if y_max else 0
         x = plot_x + index * bar_slot + (bar_slot - bar_width) / 2
         page.fill_rect(x, plot_y, bar_width, bar_height, SCENARIO_COLOURS[index % len(SCENARIO_COLOURS)])
-        page.text(x + 2, plot_y + bar_height + 8, f"{value:.3f}", size=8)
+        page.text(x + 2, plot_y + bar_height + 8, f"{value:.3f}", size=10)
         label_words = str(row["scenario_label"]).split("-")
         for line_index, label in enumerate(label_words):
-            page.text(x, plot_y - 18 - (line_index * 11), label, size=8)
+            page.text(x, plot_y - 18 - (line_index * 11), label, size=10)
         page.text(x + 4, plot_y - 45, f"n={row['n_prompts']}", size=7)
 
-    page.text(258, 28, "Scenario", size=10)
-    page.text(8, 248, "Cosine distance", size=10)
+    page.text(258, 28, "Scenario", size=12)
+    page.text(8, 248, "Cosine distance", size=12)
     page.save(output_file)
 
 
@@ -461,7 +461,7 @@ def draw_individual_bar_plots(summary_rows: list[dict[str, Any]], output_dir: Pa
             tick_value = y_max * tick / 5
             y = plot_y + (tick_value / y_max) * plot_height
             page.line(plot_x - 4, y, plot_x, y, width=0.8)
-            page.text(44, y - 4, f"{tick_value:.2f}", size=8)
+            page.text(44, y - 4, f"{tick_value:.2f}", size=10)
             if tick:
                 page.line(plot_x, y, plot_x + plot_width, y, width=0.25, colour=(0.82, 0.82, 0.82))
 
@@ -471,7 +471,7 @@ def draw_individual_bar_plots(summary_rows: list[dict[str, Any]], output_dir: Pa
         page.fill_rect(x, plot_y, bar_width, bar_height, SCENARIO_COLOURS[index % len(SCENARIO_COLOURS)])
         page.text(x + 22, plot_y + bar_height + 10, f"{value:.3f}", size=11)
         page.text(x + 26, plot_y - 22, f"n={row['n_prompts']}", size=9)
-        page.text(16, 182, "Cosine distance", size=10)
+        page.text(16, 182, "Cosine distance", size=12)
         page.save(output_dir / f"{row['scenario']}_semantic_distance.pdf")
 
 

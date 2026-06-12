@@ -202,13 +202,13 @@ def draw_scenario_panel(
 
     page.text(x + 4, title_y, title, size=12)
     page.stroke_rect(plot_x, plot_y, plot_width, plot_height)
-    page.text(plot_x, plot_y + plot_height + 8, "Normalised mean +/- SD", size=8)
+    page.text(plot_x, plot_y + plot_height + 8, "Normalised mean +/- SD", size=10)
 
     for tick in range(0, 6):
         value = tick / 5
         tick_y = plot_y + value * plot_height
         page.line(plot_x - 4, tick_y, plot_x, tick_y)
-        page.text(plot_x - 31, tick_y - 3, f"{value:.1f}", size=7)
+        page.text(plot_x - 31, tick_y - 3, f"{value:.1f}", size=9)
         if tick:
             page.line(plot_x, tick_y, plot_x + plot_width, tick_y, width=0.25)
 
@@ -225,7 +225,7 @@ def draw_scenario_panel(
         colour = BAR_COLOURS[metric]
 
         page.fill_rect(bar_x, plot_y, bar_width, bar_height, colour)
-        page.text(bar_x - 2, plot_y - 18, str(item["label"]), size=8)
+        page.text(bar_x - 2, plot_y - 18, str(item["label"]), size=10)
         page.text(bar_x + 2, plot_y + bar_height + 5, f"{metric_mean:.2f}", size=7)
 
         error_low = max(0, metric_mean - metric_sd)

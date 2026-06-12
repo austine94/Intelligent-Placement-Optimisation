@@ -184,6 +184,27 @@ This compares the six scenarios across the configured locally installed Ollama S
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.csv`
 - `experiment_data/parameter_accuracy_model_sweep_accuracy_table.md`
 
+
+## Stress parameter accuracy model sweep
+
+Run the parameter-only stress-test model sweep with:
+
+```bash
+python paper_experiments/stress_parameter_accuracy_model_sweep.py
+```
+
+This stress section compares the same five configured locally installed Ollama SLMs used in the model-sweep experiments on two generated prompt-variant settings, without invoking Gurobi or the allocation solver. For every repetition, the script first rewrites each canonical stress prompt while preserving its optimisation intent, then asks each model to select only `solve_allocation` parameters. It scores the selected alpha/beta values with the same `±0.05` tolerance and combined alpha/beta repetition score used by the other parameter-accuracy experiments.
+
+The stress-test system prompt adds two explicit balanced-act rules:
+
+- cost + latency stress prompt → `alpha = 0.5`, `beta = 0.0`
+- cost + energy stress prompt → `alpha = 0.0`, `beta = 0.5`
+
+The script writes raw JSON results to `experiment_data/stress_parameter_accuracy_model_sweep_results.json`, and writes proportion-correct tables to:
+
+- `experiment_data/stress_parameter_accuracy_model_sweep_accuracy_table.csv`
+- `experiment_data/stress_parameter_accuracy_model_sweep_accuracy_table.md`
+
 ## Parameter accuracy standard-deviation tables
 
 After running both standalone parameter-selection accuracy sweeps, compute standard-deviation tables from the raw records with:
