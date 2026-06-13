@@ -197,6 +197,29 @@ This uses the same six fixed prompts, model list, system prompt, and single `sol
 - `experiment_data/tool_calling_reliability_failure_table.csv`
 - `experiment_data/tool_calling_reliability_failure_table.md`
 
+## Tool-calling reliability temperature sweep
+
+Run the tool-calling reliability temperature sweep with:
+
+```bash
+python paper_experiments/tool_calling_reliability_temperature_sweep.py
+```
+
+This mirrors the parameter-selection accuracy temperature sweep, but uses the `interstellarninja/llama3.1-8b-tools:latest` Ollama model and records whether each run successfully selected `solve_allocation` as the first tool call. It does not execute the selected tool or invoke Gurobi. The script writes raw JSON results to `experiment_data/tool_calling_reliability_temperature_sweep_results.json`, and writes success-proportion tables to:
+
+- `experiment_data/tool_calling_reliability_temperature_sweep_success_table.csv`
+- `experiment_data/tool_calling_reliability_temperature_sweep_success_table.md`
+
+Plot tool-call reliability together with parameter-selection standard deviation by temperature with:
+
+```bash
+python paper_experiments/plot_parameter_std_and_tool_reliability_temperature_sweep.py
+```
+
+This reads `experiment_data/tool_calling_reliability_temperature_sweep_results.json` and `experiment_data/parameter_accuracy_temperature_sweep_parameter_selection_standard_deviation_table.csv` without rerunning Ollama models, then writes:
+
+- `paper_plots/parameter_std_and_tool_reliability_temperature_sweep_by_scenario.pdf`
+
 ## Stress parameter accuracy model sweep
 
 Run the parameter-only stress-test model sweep with:

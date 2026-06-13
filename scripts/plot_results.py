@@ -84,10 +84,10 @@ def plot_benchmarks(df):
             errorbar='sd' 
         )
         
-        plt.title(f"Average {metric}", fontsize=14, fontweight='bold')
-        plt.xlabel("Scenario", fontsize=14)
-        plt.ylabel(metric, fontsize=13)
-        plt.tick_params(axis="both", labelsize=11)
+        plt.title(f"Average {metric}", fontsize=16, fontweight='bold')
+        plt.xlabel("Scenario", fontsize=16)
+        plt.ylabel(metric, fontsize=16)
+        plt.tick_params(axis="both", labelsize=16)
         
         plt.tight_layout()
         
