@@ -266,14 +266,14 @@ def draw_temperature_accuracy_plot(
     # Axes and grid.
     page.line(plot_x, plot_y, plot_x + plot_width, plot_y, width=1.0)
     page.line(plot_x, plot_y, plot_x, plot_y + plot_height, width=1.0)
-    page.text(plot_x + plot_width / 2 - 34, 30, "Temperature", size=12)
-    page.text(18, plot_y + plot_height / 2, "Mean accuracy", size=12)
+    page.text(plot_x + plot_width / 2 - 34, 30, "Temperature", size=16)
+    page.text(18, plot_y + plot_height / 2, "Mean accuracy", size=16)
 
     for tick in range(0, 6):
         value = y_max * tick / 5
         tick_y = plot_y + (value / y_max) * plot_height
         page.line(plot_x - 4, tick_y, plot_x, tick_y, width=0.75)
-        page.text(plot_x - 36, tick_y - 3, f"{value:.1f}", size=10)
+        page.text(plot_x - 36, tick_y - 3, f"{value:.1f}", size=16)
         if tick:
             page.line(plot_x, tick_y, plot_x + plot_width, tick_y, width=0.25, colour=(0.82, 0.82, 0.82))
 
@@ -281,7 +281,7 @@ def draw_temperature_accuracy_plot(
         tick_x = plot_x + ((temperature - x_min) / (x_max - x_min)) * plot_width
         page.line(tick_x, plot_y, tick_x, plot_y - 4, width=0.75)
         label = f"{temperature:g}"
-        page.text(tick_x - 5 * len(label) / 2, plot_y - 18, label, size=10)
+        page.text(tick_x - 5 * len(label) / 2, plot_y - 18, label, size=16)
 
     def map_point(temperature: float, value: float) -> tuple[float, float]:
         x = plot_x + ((temperature - x_min) / (x_max - x_min)) * plot_width
@@ -297,13 +297,13 @@ def draw_temperature_accuracy_plot(
 
     legend_x = 604
     legend_y = 394
-    page.text(legend_x, legend_y + 20, "Scenario", size=13)
+    page.text(legend_x, legend_y + 20, "Scenario", size=16)
     for index, scenario in enumerate(series):
         y = legend_y - index * 20
         colour = SCENARIO_COLOURS[index % len(SCENARIO_COLOURS)]
         page.line(legend_x, y, legend_x + 22, y, width=1.4, colour=colour)
         page.marker(legend_x + 11, y, colour)
-        page.text(legend_x + 30, y - 4, scenario, size=10)
+        page.text(legend_x + 30, y - 4, scenario, size=16)
 
     page.save(output_file)
     print(f"Saved plot: {output_file}")

@@ -113,10 +113,11 @@ def calculate_and_plot_accuracy():
         data=summary, x="Strategy", y="Alpha Correct", order=ORDER,
         color="#1f77b4" # Blue
     )
-    plt.title("Adherence to Alpha Rules", fontsize=14, fontweight='bold')
-    plt.ylabel("Proportion Correct (0-1)", fontsize=12)
-    plt.xlabel("Strategy", fontsize=12)
+    plt.title("Adherence to Alpha Rules", fontsize=16, fontweight='bold')
+    plt.ylabel("Proportion Correct (0-1)", fontsize=16)
+    plt.xlabel("Strategy", fontsize=16)
     plt.ylim(0, 1.05) # Lock scale 0 to 100%
+    plt.tick_params(axis="both", labelsize=16)
     
     # Add percentage labels on top of bars
     for index, row in summary.iterrows():
@@ -124,7 +125,7 @@ def calculate_and_plot_accuracy():
         try:
             x_loc = ORDER.index(row["Strategy"])
             plt.text(x_loc, row["Alpha Correct"] + 0.02, f"{row['Alpha Correct']:.0%}", 
-                     ha='center', color='black', fontweight='bold')
+                     ha='center', color='black', fontweight='bold', fontsize=16)
         except ValueError:
             pass
 
@@ -139,16 +140,17 @@ def calculate_and_plot_accuracy():
         data=summary, x="Strategy", y="Beta Correct", order=ORDER,
         color="#2ca02c" # Green
     )
-    plt.title("Adherence to Beta Rules", fontsize=14, fontweight='bold')
-    plt.ylabel("Proportion Correct (0-1)", fontsize=12)
-    plt.xlabel("Strategy", fontsize=12)
+    plt.title("Adherence to Beta Rules", fontsize=16, fontweight='bold')
+    plt.ylabel("Proportion Correct (0-1)", fontsize=16)
+    plt.xlabel("Strategy", fontsize=16)
     plt.ylim(0, 1.05)
+    plt.tick_params(axis="both", labelsize=16)
 
     for index, row in summary.iterrows():
         try:
             x_loc = ORDER.index(row["Strategy"])
             plt.text(x_loc, row["Beta Correct"] + 0.02, f"{row['Beta Correct']:.0%}", 
-                     ha='center', color='black', fontweight='bold')
+                     ha='center', color='black', fontweight='bold', fontsize=16)
         except ValueError:
             pass
 

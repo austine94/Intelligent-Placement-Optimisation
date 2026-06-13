@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -34,21 +35,35 @@ FAILURE_TABLE_CSV = EXPERIMENT_DATA_DIR / "tool_calling_reliability_failure_tabl
 FAILURE_TABLE_MD = EXPERIMENT_DATA_DIR / "tool_calling_reliability_failure_table.md"
 
 
+def get_response_field(value: Any, field_name: str, default: Any = None) -> Any:
+    """Return a field from dict-like or attribute-based response objects.
+
+    The Ollama Python client has returned both plain dictionaries and typed
+    response objects across versions.  Tool calls can therefore be nested in
+    either mapping keys (``response["message"]["tool_calls"]``) or object
+    attributes (``response.message.tool_calls``).
+    """
+    if isinstance(value, Mapping):
+        return value.get(field_name, default)
+    return getattr(value, field_name, default)
+
+
 def selected_tool_names(response: Any) -> list[str]:
-    """Extract selected tool names from an Ollama chat response."""
-    try:
-        tool_calls = response["message"].get("tool_calls", [])
-    except (KeyError, TypeError):
+    """Extract selected tool names from an Ollama chat response.
+
+    Supports both legacy dictionary responses and newer typed Ollama response
+    objects. Without this compatibility layer, valid tool calls represented as
+    objects are misclassified as missing tool calls.
+    """
+    message = get_response_field(response, "message")
+    tool_calls = get_response_field(message, "tool_calls", [])
+    if not tool_calls:
         return []
 
     names: list[str] = []
     for tool_call in tool_calls:
-        if not isinstance(tool_call, dict):
-            continue
-        function = tool_call.get("function", {})
-        if not isinstance(function, dict):
-            continue
-        name = function.get("name")
+        function = get_response_field(tool_call, "function", {})
+        name = get_response_field(function, "name")
         if isinstance(name, str):
             names.append(name)
     return names
