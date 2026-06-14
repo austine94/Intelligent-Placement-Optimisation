@@ -197,6 +197,19 @@ This uses the same six fixed prompts, model list, system prompt, and single `sol
 - `experiment_data/tool_calling_reliability_failure_table.csv`
 - `experiment_data/tool_calling_reliability_failure_table.md`
 
+## Ablated tool-calling reliability model sweep
+
+Run the ablated tool-calling reliability model sweep with:
+
+```bash
+python paper_experiments/tool_calling_reliability_model_sweep_ablated.py
+```
+
+This repeats the tool-calling reliability model sweep across the same configured Ollama SLMs and fixed prompts, but removes the agent scaffolding used to help reliability: it sends only the user prompt with no system instructions and allows exactly one model attempt per repetition. The original `solve_allocation` tool definition and descriptions are still provided. It only records returned tool-call metadata and never executes the selected tool, so it does not invoke Gurobi or the allocation solver. The script writes raw JSON results to `experiment_data/tool_calling_reliability_model_sweep_ablated_results.json`, and writes failure-proportion tables to:
+
+- `experiment_data/tool_calling_reliability_model_sweep_ablated_failure_table.csv`
+- `experiment_data/tool_calling_reliability_model_sweep_ablated_failure_table.md`
+
 ## Tool-calling reliability temperature sweep
 
 Run the tool-calling reliability temperature sweep with:
