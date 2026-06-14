@@ -29,12 +29,21 @@ MODEL_COLOURS: dict[str, tuple[float, float, float]] = {
     "lukaspetrik/gemma3-tools:4b": (0.58, 0.40, 0.74),
 }
 
+MODEL_LABELS: dict[str, str] = {
+    "interstellarninja/llama3.1-8b-tools:latest": "Llama3.1:8B",
+    "llama3.2:1b": "Llama3.2:1B",
+    "llama3.2:latest": "Llama3.2:3B",
+    "aratan/qwen3-4b-tools:latest": "Qwen3:4B",
+    "lukaspetrik/gemma3-tools:4b": "Gemma3:4B",
+}
+
 PLOTS = [
     {
         "metric": "metric_regret_percent",
         "title": "Average metric-wise absolute regret by workload size",
         "ylabel": "Average absolute regret (%)",
         "output": "scalability_average_regret.pdf",
+        "y_max": 100.0,
     },
     {
         "metric": "total_token_count",
@@ -71,6 +80,10 @@ class PdfPage:
 
     def text(self, x: float, y: float, text: str, size: int = 10) -> None:
         self.commands.append(f"BT /F1 {size} Tf {x:.2f} {y:.2f} Td ({self._escape(text)}) Tj ET")
+
+    def rotated_text(self, x: float, y: float, text: str, size: int = 10) -> None:
+        """Draw text rotated 90 degrees counter-clockwise around its origin."""
+        self.commands.append(f"BT /F1 {size} Tf 0 1 -1 0 {x:.2f} {y:.2f} Tm ({self._escape(text)}) Tj ET")
 
     def line(
         self,
@@ -209,6 +222,7 @@ def draw_line_plot(
     title: str,
     ylabel: str,
     output_file: Path,
+    y_axis_max: float | None = None,
 ) -> None:
     """Draw a single PDF line plot for one aggregate metric."""
     page = PdfPage()
@@ -221,13 +235,13 @@ def draw_line_plot(
     x_min = min(WORKLOAD_SIZES)
     x_max = max(WORKLOAD_SIZES)
     finite_values = [value for values in series.values() for _, value in values if value is not None]
-    y_max = nice_axis_max(max(finite_values) * 1.08) if finite_values else 1.0
+    y_max = y_axis_max if y_axis_max is not None else nice_axis_max(max(finite_values) * 1.08) if finite_values else 1.0
 
     # Axes and grid.
     page.line(plot_x, plot_y, plot_x + plot_width, plot_y, width=1.0)
     page.line(plot_x, plot_y, plot_x, plot_y + plot_height, width=1.0)
     page.text(plot_x + plot_width / 2 - 42, 30, "Workload size", size=16)
-    page.text(18, plot_y + plot_height / 2, ylabel, size=16)
+    page.rotated_text(22, plot_y + plot_height / 2 - (len(ylabel) * 4), ylabel, size=16)
 
     for tick in range(0, 6):
         value = y_max * tick / 5
@@ -265,7 +279,7 @@ def draw_line_plot(
         colour = MODEL_COLOURS[model]
         page.line(legend_x, y, legend_x + 22, y, width=1.4, colour=colour)
         page.marker(legend_x + 11, y, colour)
-        page.text(legend_x + 30, y - 4, model, size=16)
+        page.text(legend_x + 30, y - 4, MODEL_LABELS.get(model, model), size=16)
 
     page.save(output_file)
     print(f"Saved plot: {output_file}")
@@ -280,6 +294,7 @@ def plot_scalability_experiment(results: dict[str, dict[str, list[dict[str, Any]
             title=str(plot_spec["title"]),
             ylabel=str(plot_spec["ylabel"]),
             output_file=PLOTS_DIR / str(plot_spec["output"]),
+            y_axis_max=plot_spec.get("y_max"),
         )
 
 
