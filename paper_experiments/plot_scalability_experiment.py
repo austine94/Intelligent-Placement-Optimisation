@@ -43,7 +43,7 @@ PLOTS = [
         "title": "Average metric-wise absolute regret by workload size",
         "ylabel": "Average absolute regret (%)",
         "output": "scalability_average_regret.pdf",
-        "y_max": 100.0,
+        "y_max": 120.0,
     },
     {
         "metric": "total_token_count",
@@ -69,7 +69,7 @@ PLOTS = [
 class PdfPage:
     """Tiny PDF writer with enough drawing primitives for line charts."""
 
-    def __init__(self, width: float = 720, height: float = 504):
+    def __init__(self, width: float = 820, height: float = 504):
         self.width = width
         self.height = height
         self.commands: list[str] = []
@@ -271,7 +271,7 @@ def draw_line_plot(
             page.marker(x, y, colour)
 
     # Legend.
-    legend_x = 612
+    legend_x = 632
     legend_y = 394
     page.text(legend_x, legend_y + 20, "Model", size=16)
     for index, model in enumerate(MODELS):
