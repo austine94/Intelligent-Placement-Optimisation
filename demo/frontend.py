@@ -18,7 +18,18 @@ DASHBOARD_HTML = """<!doctype html>
     :root { color-scheme: light; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { margin: 0; background: #f6f8fb; color: #172033; }
     header { background: linear-gradient(135deg, #0f3d5e, #216b91); color: white; padding: 1.5rem 2rem; }
-    main { padding: 1.5rem 2rem; display: grid; grid-template-columns: minmax(320px, 1fr) minmax(420px, 1.3fr); gap: 1rem; }
+    main {
+      padding: 1.5rem 2rem;
+      display: grid;
+      grid-template-columns: minmax(320px, 0.95fr) minmax(480px, 1.35fr);
+      grid-template-areas:
+        "priority plot"
+        "terminal plot"
+        "solution nodes"
+        "status status";
+      gap: 1rem;
+      align-items: start;
+    }
     section { background: white; border: 1px solid #dce4ef; border-radius: 14px; padding: 1rem; box-shadow: 0 8px 24px rgb(23 32 51 / 8%); }
     h1, h2 { margin: 0 0 .75rem; }
     .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: .75rem; }
@@ -28,11 +39,27 @@ DASHBOARD_HTML = """<!doctype html>
     th, td { text-align: left; border-bottom: 1px solid #e5ebf2; padding: .45rem; font-size: .92rem; }
     input, button { font: inherit; padding: .65rem; border-radius: 8px; border: 1px solid #b9c7d6; }
     button { background: #216b91; color: white; border: 0; cursor: pointer; }
-    img { width: 100%; max-height: 520px; object-fit: contain; border: 1px solid #dce4ef; border-radius: 12px; background: white; }
-    pre { white-space: pre-wrap; background: #0d1726; color: #dbeafe; border-radius: 10px; padding: .8rem; overflow: auto; max-height: 280px; }
-    .span-2 { grid-column: 1 / -1; }
+    img { width: 100%; max-height: 640px; object-fit: contain; border: 1px solid #dce4ef; border-radius: 12px; background: white; }
+    pre { white-space: pre-wrap; background: #0d1726; color: #dbeafe; border-radius: 10px; padding: .8rem; overflow: auto; max-height: 360px; }
+    .priority-panel { grid-area: priority; }
+    .terminal-panel { grid-area: terminal; }
+    .plot-panel { grid-area: plot; }
+    .solution-panel { grid-area: solution; }
+    .nodes-panel { grid-area: nodes; }
+    .status-panel { grid-area: status; }
     .muted { color: #607089; font-size: .9rem; }
-    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "priority"
+          "plot"
+          "terminal"
+          "solution"
+          "nodes"
+          "status";
+      }
+    }
   </style>
 </head>
 <body>
@@ -41,11 +68,7 @@ DASHBOARD_HTML = """<!doctype html>
   <div class="muted" style="color:#d7ecff">Live SQLite-backed dashboard for ingestion, policy, optimisation, and visual solution output.</div>
 </header>
 <main>
-  <section>
-    <h2>System status</h2>
-    <div id="status" class="metric-grid"></div>
-  </section>
-  <section>
+  <section class="priority-panel">
     <h2>Operational priority</h2>
     <form id="policy-form">
       <input id="priority" name="priority" style="width:70%" placeholder="minimise financial cost">
@@ -53,21 +76,25 @@ DASHBOARD_HTML = """<!doctype html>
     </form>
     <p class="muted">The running agent reads this policy through the MCP policy tool on each cycle.</p>
   </section>
-  <section>
-    <h2>Latest solution</h2>
-    <div id="solution" class="metric-grid"></div>
-  </section>
-  <section>
+  <section class="plot-panel">
     <h2>Allocation plot</h2>
     <img id="plot" alt="Latest allocation plot will appear here once a solution is rendered.">
   </section>
-  <section class="span-2">
+  <section class="terminal-panel">
+    <h2>Terminal readings</h2>
+    <pre id="raw"></pre>
+  </section>
+  <section class="solution-panel">
+    <h2>Latest solution</h2>
+    <div id="solution" class="metric-grid"></div>
+  </section>
+  <section class="nodes-panel">
     <h2>Open compute nodes</h2>
     <table><thead><tr><th>Node</th><th>Capacity</th><th>Assigned viewers</th><th>Status</th></tr></thead><tbody id="nodes"></tbody></table>
   </section>
-  <section class="span-2">
-    <h2>Raw latest solution JSON</h2>
-    <pre id="raw"></pre>
+  <section class="status-panel">
+    <h2>System status</h2>
+    <div id="status" class="metric-grid"></div>
   </section>
 </main>
 <script>

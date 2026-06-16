@@ -36,6 +36,9 @@ def render_latest_solution(db_path, output_dir: Path = OUTPUT_DIR):
     path = output_dir / "latest_solution.md"
     path.write_text("\n".join(lines) + "\n")
     try:
+        import matplotlib
+
+        matplotlib.use("Agg", force=True)
         import matplotlib.pyplot as plt
         plt.figure(figsize=(7, 6))
         for node in nodes:
