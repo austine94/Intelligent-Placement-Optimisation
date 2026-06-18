@@ -160,7 +160,7 @@ def _sentence_transformers_available() -> bool:
 
 def _fallback_message(reason: str, *, warn: bool) -> None:
     if warn:
-        print(f"⚠️ Falling back to TF-IDF semantic-distance proxy: {reason}", file=sys.stderr)
+        print(f"WARNING Falling back to TF-IDF semantic-distance proxy: {reason}", file=sys.stderr)
 
 
 def pair_distances(

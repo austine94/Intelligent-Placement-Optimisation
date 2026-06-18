@@ -59,10 +59,10 @@ def parse_metrics_from_text(text_output: str) -> Dict[str, float]:
 
 async def run_temp_sweep_benchmark() -> None:
     print(
-        f"🚀 Temp-Sweep Benchmark: {N_REPS} reps x {len(TEMPERATURES)} temps x {len(TEST_PROMPTS)} prompts"
+        f" Temp-Sweep Benchmark: {N_REPS} reps x {len(TEMPERATURES)} temps x {len(TEST_PROMPTS)} prompts"
     )
-    print(f"🤖 Model: {MODEL} (Local)")
-    print(f"🌡️ Temperatures: {TEMPERATURES}")
+    print(f" Model: {MODEL} (Local)")
+    print(f" Temperatures: {TEMPERATURES}")
 
     server_params = StdioServerParameters(
         command="python",
@@ -95,7 +95,7 @@ async def run_temp_sweep_benchmark() -> None:
                 )
 
             for rep in range(N_REPS):
-                print(f"\n📢 --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
+                print(f"\n --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
 
                 # Generate one world per rep so all temps/prompts share the same instance.
                 subprocess.run(
@@ -105,7 +105,7 @@ async def run_temp_sweep_benchmark() -> None:
                 )
 
                 for temp in TEMPERATURES:
-                    print(f"  🌡️ Temp: {temp}")
+                    print(f"   Temp: {temp}")
                     for category, prompt in TEST_PROMPTS.items():
                         print(f"    > Strat: {category:<15}...", end="", flush=True)
 
@@ -138,7 +138,7 @@ async def run_temp_sweep_benchmark() -> None:
                                         "error": "No tool call",
                                     }
                                 )
-                                print(" ❌ Failed (No Tool)")
+                                print(" ERROR Failed (No Tool)")
                                 continue
 
                             tool_call = tool_calls[0]
@@ -156,7 +156,7 @@ async def run_temp_sweep_benchmark() -> None:
                                         "error": f"Unexpected tool: {fn_name}",
                                     }
                                 )
-                                print(f" ⚠️ Skipped ({fn_name})")
+                                print(f" WARNING Skipped ({fn_name})")
                                 continue
 
                             result = await session.call_tool(fn_name, fn_args)
@@ -173,7 +173,7 @@ async def run_temp_sweep_benchmark() -> None:
                                     "metrics": parsed,
                                 }
                             )
-                            print(" ✅")
+                            print(" OK")
 
                         except Exception as exc:
                             results_db[str(temp)][category].append(
@@ -185,13 +185,13 @@ async def run_temp_sweep_benchmark() -> None:
                                     "error": str(exc),
                                 }
                             )
-                            print(f" ❌ Error: {exc}")
+                            print(f" ERROR Error: {exc}")
 
     os.makedirs(os.path.dirname(RESULTS_FILE), exist_ok=True)
     with open(RESULTS_FILE, "w", encoding="utf-8") as f:
         json.dump(results_db, f, indent=2)
 
-    print(f"\n✅ Temp-sweep benchmark complete. Results saved to {RESULTS_FILE}")
+    print(f"\nOK Temp-sweep benchmark complete. Results saved to {RESULTS_FILE}")
 
 
 if __name__ == "__main__":

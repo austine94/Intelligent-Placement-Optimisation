@@ -135,12 +135,12 @@ async def run_varying_prompt_regret_model_sweep() -> None:
     from mcp.client.stdio import stdio_client
 
     print(
-        f"🚀 Varying-prompt regret model sweep: {N_REPS} reps x {len(MODELS)} models x {len(TEST_PROMPTS)} prompts"
+        f" Varying-prompt regret model sweep: {N_REPS} reps x {len(MODELS)} models x {len(TEST_PROMPTS)} prompts"
     )
-    print(f"🤖 Models: {MODELS}")
-    print(f"🌡️ Agent temperature: {TEMPERATURE}")
-    print(f"🧪 Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}")
-    print(f"🎯 Optimal parameters: {OPTIMAL_PARAMS}")
+    print(f" Models: {MODELS}")
+    print(f" Agent temperature: {TEMPERATURE}")
+    print(f" Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}")
+    print(f" Optimal parameters: {OPTIMAL_PARAMS}")
 
     server_params = StdioServerParameters(
         command="python",
@@ -158,7 +158,7 @@ async def run_varying_prompt_regret_model_sweep() -> None:
             await session.initialize()
 
             for rep in range(N_REPS):
-                print(f"\n📢 --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
+                print(f"\n --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
                 subprocess.run(["python", str(GENERATOR_SCRIPT), str(rep)], check=True, capture_output=True)
 
                 optimal_outputs: dict[str, dict[str, Any]] = {}
@@ -182,13 +182,13 @@ async def run_varying_prompt_regret_model_sweep() -> None:
                 prompt_records: dict[str, dict[str, Any]] = {}
                 for scenario in SCENARIO_ORDER:
                     canonical_prompt = TEST_PROMPTS[scenario]
-                    print(f"  🧪 Prompt variant: {scenario:<15}...", end="", flush=True)
+                    print(f"   Prompt variant: {scenario:<15}...", end="", flush=True)
                     prompt_record = generate_fuzzed_prompt(scenario, canonical_prompt, rep)
                     prompt_records[scenario] = prompt_record
-                    print(" ✅" if "prompt_generation_error" not in prompt_record else " ⚠️ fallback")
+                    print(" OK" if "prompt_generation_error" not in prompt_record else " WARNING fallback")
 
                 for model in MODELS:
-                    print(f"  🤖 Model: {model}")
+                    print(f"   Model: {model}")
                     for scenario in SCENARIO_ORDER:
                         prompt_record = prompt_records[scenario]
                         prompt = prompt_record["prompt"]
@@ -207,7 +207,7 @@ async def run_varying_prompt_regret_model_sweep() -> None:
                         if record.get("optimal_objective") is None:
                             record["error"] = record.get("error", "Could not parse optimal objective")
                             results_db[model][scenario].append(record)
-                            print(" ❌ Baseline failed")
+                            print(" ERROR Baseline failed")
                             continue
 
                         messages = [
@@ -227,7 +227,7 @@ async def run_varying_prompt_regret_model_sweep() -> None:
                             if not tool_calls:
                                 record["error"] = "No tool call from agent"
                                 results_db[model][scenario].append(record)
-                                print(" ❌ Agent failed (No Tool)")
+                                print(" ERROR Agent failed (No Tool)")
                                 continue
 
                             tool_call = tool_calls[0]
@@ -238,7 +238,7 @@ async def run_varying_prompt_regret_model_sweep() -> None:
                             if agent_fn_name != "solve_allocation":
                                 record["error"] = f"Agent called unexpected tool: {agent_fn_name}"
                                 results_db[model][scenario].append(record)
-                                print(f" ⚠️ Agent skipped ({agent_fn_name})")
+                                print(f" WARNING Agent skipped ({agent_fn_name})")
                                 continue
 
                             agent_metrics, agent_objective = await call_solve_allocation(
@@ -251,7 +251,7 @@ async def run_varying_prompt_regret_model_sweep() -> None:
                             if agent_objective is None:
                                 record["error"] = "Could not parse agent objective"
                                 results_db[model][scenario].append(record)
-                                print(" ⚠️ Missing objective")
+                                print(" WARNING Missing objective")
                                 continue
 
                             record.update(
@@ -263,12 +263,12 @@ async def run_varying_prompt_regret_model_sweep() -> None:
                                 )
                             )
                             results_db[model][scenario].append(record)
-                            print(" ✅")
+                            print(" OK")
 
                         except Exception as exc:
                             record["error"] = f"Agent run error: {exc}"
                             results_db[model][scenario].append(record)
-                            print(f" ❌ Agent error: {exc}")
+                            print(f" ERROR Agent error: {exc}")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
@@ -279,9 +279,9 @@ async def run_varying_prompt_regret_model_sweep() -> None:
     write_regret_table_markdown(table_rows)
     print_regret_table(table_rows)
 
-    print(f"\n✅ Varying-prompt regret model sweep complete. Results saved to {RESULTS_FILE}")
-    print(f"✅ Average absolute regret table CSV saved to {REGRET_TABLE_CSV}")
-    print(f"✅ Average absolute regret table Markdown saved to {REGRET_TABLE_MD}")
+    print(f"\nOK Varying-prompt regret model sweep complete. Results saved to {RESULTS_FILE}")
+    print(f"OK Average absolute regret table CSV saved to {REGRET_TABLE_CSV}")
+    print(f"OK Average absolute regret table Markdown saved to {REGRET_TABLE_MD}")
 
 
 if __name__ == "__main__":

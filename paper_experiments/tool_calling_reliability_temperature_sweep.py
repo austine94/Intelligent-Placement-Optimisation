@@ -110,14 +110,14 @@ async def run_tool_calling_reliability_temperature_sweep() -> None:
     import ollama
 
     print(
-        f"🚀 Tool-calling reliability temperature sweep: {N_REPS} reps x "
+        f" Tool-calling reliability temperature sweep: {N_REPS} reps x "
         f"{len(TEMPERATURES)} temps x {len(TEST_PROMPTS)} prompts"
     )
-    print(f"🤖 Model: {MODEL} (Local)")
-    print(f"🌡️ Temperatures: {TEMPERATURES}")
-    print(f"🛠️ Correct tool: {CORRECT_TOOL_NAME}")
-    print(f"🔁 Agent tries per prompt: {MAX_AGENT_TRIES}")
-    print("🚫 This experiment records the selected tool only; it does not execute tools or call Gurobi.")
+    print(f" Model: {MODEL} (Local)")
+    print(f" Temperatures: {TEMPERATURES}")
+    print(f" Correct tool: {CORRECT_TOOL_NAME}")
+    print(f" Agent tries per prompt: {MAX_AGENT_TRIES}")
+    print(" This experiment records the selected tool only; it does not execute tools or call Gurobi.")
 
     results_db: dict[str, dict[str, list[dict[str, Any]]]] = {
         str(temperature): {scenario: [] for scenario in TEST_PROMPTS}
@@ -125,10 +125,10 @@ async def run_tool_calling_reliability_temperature_sweep() -> None:
     }
 
     for rep in range(N_REPS):
-        print(f"\n📢 --- REP {rep + 1}/{N_REPS} ---")
+        print(f"\n --- REP {rep + 1}/{N_REPS} ---")
         for temperature in TEMPERATURES:
             temp_key = str(temperature)
-            print(f"  🌡️ Temp: {temperature}")
+            print(f"   Temp: {temperature}")
             for scenario in SCENARIO_ORDER:
                 prompt = TEST_PROMPTS[scenario]
                 print(f"    > Strat: {scenario:<15}...", end="", flush=True)
@@ -206,10 +206,10 @@ async def run_tool_calling_reliability_temperature_sweep() -> None:
                 results_db[temp_key][scenario].append(record)
 
                 if record["tool_call_success"]:
-                    print(f" ✅ correct on try {record['successful_attempt']}")
+                    print(f" OK correct on try {record['successful_attempt']}")
                 else:
                     first_tool_name = record["first_tool_name"] or "No Tool"
-                    print(f" ❌ failed after {record['num_attempts']} tries ({first_tool_name})")
+                    print(f" ERROR failed after {record['num_attempts']} tries ({first_tool_name})")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
@@ -220,9 +220,9 @@ async def run_tool_calling_reliability_temperature_sweep() -> None:
     write_success_table_markdown(table_rows, TEMPERATURES, SUCCESS_TABLE_MD)
     print_success_table(table_rows, TEMPERATURES)
 
-    print(f"\n✅ Tool-calling reliability temperature sweep complete. Results saved to {RESULTS_FILE}")
-    print(f"✅ Success table CSV saved to {SUCCESS_TABLE_CSV}")
-    print(f"✅ Success table Markdown saved to {SUCCESS_TABLE_MD}")
+    print(f"\nOK Tool-calling reliability temperature sweep complete. Results saved to {RESULTS_FILE}")
+    print(f"OK Success table CSV saved to {SUCCESS_TABLE_CSV}")
+    print(f"OK Success table Markdown saved to {SUCCESS_TABLE_MD}")
 
 
 if __name__ == "__main__":

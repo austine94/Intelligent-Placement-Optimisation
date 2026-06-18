@@ -146,22 +146,22 @@ def write_std_outputs(
     if not columns:
         raise ValueError(f"No sweep columns found in {results_file}")
 
-    print(f"📥 Reading: {results_file}")
-    print(f"📊 Columns: {columns}")
+    print(f" Reading: {results_file}")
+    print(f" Columns: {columns}")
 
     table_rows = build_parameter_selection_std_table(results, columns)
     write_accuracy_table_csv(table_rows, columns, csv_path)
     write_accuracy_table_markdown(table_rows, columns, markdown_path)
     print_std_table(table_rows, columns, title)
 
-    print(f"✅ Parameter-selection standard-deviation table CSV saved to {csv_path}")
-    print(f"✅ Parameter-selection standard-deviation table Markdown saved to {markdown_path}")
+    print(f"OK Parameter-selection standard-deviation table CSV saved to {csv_path}")
+    print(f"OK Parameter-selection standard-deviation table Markdown saved to {markdown_path}")
 
 
 def run_parameter_accuracy_selection_std_tables() -> None:
     """Write standard-deviation tables for model and temperature parameter sweeps."""
-    print("🚀 Parameter-accuracy parameter-selection standard-deviation tables")
-    print("📏 Statistic: population standard deviation of parameter_selection_score")
+    print(" Parameter-accuracy parameter-selection standard-deviation tables")
+    print(" Statistic: population standard deviation of parameter_selection_score")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
 

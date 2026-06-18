@@ -51,7 +51,7 @@ def is_correct(actual, target):
 
 def calculate_and_plot_accuracy():
     if not os.path.exists(INPUT_FILE):
-        print("❌ File not found. Run benchmark_parameters.py first!")
+        print("ERROR File not found. Run benchmark_parameters.py first!")
         return
 
     with open(INPUT_FILE, 'r') as f:
@@ -82,7 +82,7 @@ def calculate_and_plot_accuracy():
             })
 
     if not results:
-        print("❌ No data to process.")
+        print("ERROR No data to process.")
         return
 
     df = pd.DataFrame(results)
@@ -92,7 +92,7 @@ def calculate_and_plot_accuracy():
     summary = df.groupby("Strategy")[["Alpha Correct", "Beta Correct"]].mean().reset_index()
 
     # Print Text Summary
-    print("\n--- ✅ Accuracy Report (Proportion Correct) ---")
+    print("\n--- OK Accuracy Report (Proportion Correct) ---")
     print(summary.round(2))
     print("-" * 40)
 
@@ -123,7 +123,7 @@ def calculate_and_plot_accuracy():
 
     plt.tight_layout()
     plt.savefig("accuracy_alpha.png", dpi=300)
-    print("✅ Saved plot: accuracy_alpha.png")
+    print("OK Saved plot: accuracy_alpha.png")
     plt.close()
 
     # --- PLOT 2: BETA ACCURACY ---
@@ -148,7 +148,7 @@ def calculate_and_plot_accuracy():
 
     plt.tight_layout()
     plt.savefig("accuracy_beta.png", dpi=300)
-    print("✅ Saved plot: accuracy_beta.png")
+    print("OK Saved plot: accuracy_beta.png")
     plt.close()
 
 if __name__ == "__main__":

@@ -284,13 +284,13 @@ async def run_scalability_experiment() -> None:
     import ollama
 
     print(
-        f"🚀 Scalability experiment: {len(WORKLOAD_SIZES)} sizes x {N_REPS} reps x "
+        f" Scalability experiment: {len(WORKLOAD_SIZES)} sizes x {N_REPS} reps x "
         f"{len(MODELS)} models"
     )
-    print(f"📏 Workload sizes: {WORKLOAD_SIZES}")
-    print(f"🤖 Models: {MODELS}")
-    print(f"🌡️ Temperature: {TEMPERATURE}")
-    print(f"🎯 Scenario: {SCENARIO}, optimal parameters: {OPTIMAL_PARAMS[SCENARIO]}")
+    print(f" Workload sizes: {WORKLOAD_SIZES}")
+    print(f" Models: {MODELS}")
+    print(f" Temperature: {TEMPERATURE}")
+    print(f" Scenario: {SCENARIO}, optimal parameters: {OPTIMAL_PARAMS[SCENARIO]}")
 
     results_db: dict[str, dict[str, list[dict[str, Any]]]] = {
         str(workload_size): {model: [] for model in MODELS}
@@ -300,11 +300,11 @@ async def run_scalability_experiment() -> None:
 
     for workload_size in WORKLOAD_SIZES:
         size_key = str(workload_size)
-        print(f"\n📊 --- Workload size {workload_size} ---")
+        print(f"\n --- Workload size {workload_size} ---")
 
         for rep in range(N_REPS):
             seed = workload_seed(workload_size, rep)
-            print(f"  📢 Rep {rep + 1}/{N_REPS} (seed {seed})")
+            print(f"   Rep {rep + 1}/{N_REPS} (seed {seed})")
             generation_seconds = generate_workload(workload_size, seed)
 
             baseline_start = time.perf_counter()
@@ -345,7 +345,7 @@ async def run_scalability_experiment() -> None:
                     record["error"] = baseline_error or "Could not evaluate optimal objective"
                     record["total_case_seconds"] = generation_seconds + baseline_solve_seconds
                     results_db[size_key][model].append(record)
-                    print(" ❌ Baseline failed")
+                    print(" ERROR Baseline failed")
                     continue
 
                 messages = [
@@ -386,7 +386,7 @@ async def run_scalability_experiment() -> None:
                             }
                         )
                         results_db[size_key][model].append(record)
-                        print(" ❌ Agent failed (No Tool)")
+                        print(" ERROR Agent failed (No Tool)")
                         continue
 
                     tool_call = tool_calls[0]
@@ -409,7 +409,7 @@ async def run_scalability_experiment() -> None:
                             }
                         )
                         results_db[size_key][model].append(record)
-                        print(f" ⚠️ Agent skipped ({agent_fn_name})")
+                        print(f" WARNING Agent skipped ({agent_fn_name})")
                         continue
 
                     tool_start = time.perf_counter()
@@ -450,7 +450,7 @@ async def run_scalability_experiment() -> None:
                     regret = record.get("metric_regret_percent")
                     tokens = record.get("total_token_count")
                     print(
-                        f" ✅ regret={regret if regret is not None else 'NA'}%, "
+                        f" OK regret={regret if regret is not None else 'NA'}%, "
                         f"tokens={tokens if tokens is not None else 'NA'}"
                     )
 
@@ -468,7 +468,7 @@ async def run_scalability_experiment() -> None:
                         }
                     )
                     results_db[size_key][model].append(record)
-                    print(f" ❌ Agent error: {exc}")
+                    print(f" ERROR Agent error: {exc}")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
@@ -478,9 +478,9 @@ async def run_scalability_experiment() -> None:
     write_metrics_table_csv(table_rows)
     write_metrics_table_markdown(table_rows)
 
-    print(f"\n✅ Scalability experiment complete. Results saved to {RESULTS_FILE}")
-    print(f"✅ Metrics table CSV saved to {METRICS_TABLE_CSV}")
-    print(f"✅ Metrics table Markdown saved to {METRICS_TABLE_MD}")
+    print(f"\nOK Scalability experiment complete. Results saved to {RESULTS_FILE}")
+    print(f"OK Metrics table CSV saved to {METRICS_TABLE_CSV}")
+    print(f"OK Metrics table Markdown saved to {METRICS_TABLE_MD}")
 
 if __name__ == "__main__":
     asyncio.run(run_scalability_experiment())

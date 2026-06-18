@@ -156,14 +156,14 @@ async def run_tool_calling_reliability() -> None:
     import ollama
 
     print(
-        f"🚀 Tool-calling reliability: {N_REPS} reps x "
+        f" Tool-calling reliability: {N_REPS} reps x "
         f"{len(MODELS)} models x {len(TEST_PROMPTS)} prompts"
     )
-    print(f"🤖 Models: {MODELS}")
-    print(f"🌡️ Temperature: {TEMPERATURE}")
-    print(f"🛠️ Correct tool: {CORRECT_TOOL_NAME}")
-    print(f"🔁 Agent tries per prompt: {MAX_AGENT_TRIES}")
-    print("🚫 This experiment records the selected tool only; it does not execute tools or call Gurobi.")
+    print(f" Models: {MODELS}")
+    print(f" Temperature: {TEMPERATURE}")
+    print(f" Correct tool: {CORRECT_TOOL_NAME}")
+    print(f" Agent tries per prompt: {MAX_AGENT_TRIES}")
+    print(" This experiment records the selected tool only; it does not execute tools or call Gurobi.")
 
     results_db: dict[str, dict[str, list[dict[str, Any]]]] = {
         model: {scenario: [] for scenario in TEST_PROMPTS}
@@ -171,9 +171,9 @@ async def run_tool_calling_reliability() -> None:
     }
 
     for rep in range(N_REPS):
-        print(f"\n📢 --- REP {rep + 1}/{N_REPS} ---")
+        print(f"\n --- REP {rep + 1}/{N_REPS} ---")
         for model in MODELS:
-            print(f"  🤖 Model: {model}")
+            print(f"   Model: {model}")
             for scenario in SCENARIO_ORDER:
                 prompt = TEST_PROMPTS[scenario]
                 print(f"    > Strat: {scenario:<15}...", end="", flush=True)
@@ -251,9 +251,9 @@ async def run_tool_calling_reliability() -> None:
 
                 if record["tool_call_failure"]:
                     first_tool_name = record["first_tool_name"] or "No Tool"
-                    print(f" ❌ failed after {record['num_attempts']} tries ({first_tool_name})")
+                    print(f" ERROR failed after {record['num_attempts']} tries ({first_tool_name})")
                 else:
-                    print(f" ✅ correct on try {record['successful_attempt']}")
+                    print(f" OK correct on try {record['successful_attempt']}")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
@@ -264,9 +264,9 @@ async def run_tool_calling_reliability() -> None:
     write_failure_table_markdown(table_rows, MODELS, FAILURE_TABLE_MD)
     print_failure_table(table_rows, MODELS)
 
-    print(f"\n✅ Tool-calling reliability complete. Results saved to {RESULTS_FILE}")
-    print(f"✅ Failure table CSV saved to {FAILURE_TABLE_CSV}")
-    print(f"✅ Failure table Markdown saved to {FAILURE_TABLE_MD}")
+    print(f"\nOK Tool-calling reliability complete. Results saved to {RESULTS_FILE}")
+    print(f"OK Failure table CSV saved to {FAILURE_TABLE_CSV}")
+    print(f"OK Failure table Markdown saved to {FAILURE_TABLE_MD}")
 
 
 if __name__ == "__main__":
