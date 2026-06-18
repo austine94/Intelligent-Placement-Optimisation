@@ -539,17 +539,17 @@ async def run_regret_baseline_comparison() -> None:
     from mcp.client.stdio import stdio_client
 
     print(
-        "🚀 Regret baseline comparison: "
+        " Regret baseline comparison: "
         f"{N_REPS} reps x {len(TEST_PROMPTS)} prompts x "
         f"{len(BASELINE_COLUMNS)} baselines"
     )
-    print(f"🤖 Agentic model: {MODEL}")
-    print(f"🌡️ Agentic temperature: {TEMPERATURE}")
-    print(f"🧪 Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}")
-    print(f"📏 Semantic-distance backend: {semantic_distance_backend()} model={SEMANTIC_DISTANCE_MODEL}")
-    print("🎲 Random samples per generated workload/scenario: 1")
-    print(f"🎯 Optimal parameters: {OPTIMAL_PARAMS}")
-    print(f"🎛️ Random parameter grid: {PARAMETER_GRID}")
+    print(f" Agentic model: {MODEL}")
+    print(f" Agentic temperature: {TEMPERATURE}")
+    print(f" Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}")
+    print(f" Semantic-distance backend: {semantic_distance_backend()} model={SEMANTIC_DISTANCE_MODEL}")
+    print(" Random samples per generated workload/scenario: 1")
+    print(f" Optimal parameters: {OPTIMAL_PARAMS}")
+    print(f" Random parameter grid: {PARAMETER_GRID}")
 
     server_params = StdioServerParameters(
         command="python",
@@ -567,7 +567,7 @@ async def run_regret_baseline_comparison() -> None:
             await session.initialize()
 
             for rep in range(N_REPS):
-                print(f"\n📢 --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
+                print(f"\n --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
                 subprocess.run(["python", str(GENERATOR_SCRIPT), str(rep)], check=True, capture_output=True)
 
                 optimal_outputs: dict[str, dict[str, Any]] = {}
@@ -596,7 +596,7 @@ async def run_regret_baseline_comparison() -> None:
                     print(f"    - prompt fuzz via {PROMPT_FUZZ_MODEL}...", end="", flush=True)
                     prompt_record = generate_fuzzed_prompt(scenario, canonical_prompt, rep)
                     prompt = prompt_record["prompt"]
-                    print(" ✅" if "prompt_generation_error" not in prompt_record else " ⚠️ fallback")
+                    print(" OK" if "prompt_generation_error" not in prompt_record else " WARNING fallback")
 
                     print(f"    - {BASELINE_COLUMNS[0]}...", end="", flush=True)
                     agent_record = await evaluate_agentic_baseline(
@@ -609,11 +609,11 @@ async def run_regret_baseline_comparison() -> None:
                     )
                     results_db[BASELINE_COLUMNS[0]][scenario].append(agent_record)
                     if agent_record.get("metric_regret_percent") is None:
-                        print(" ❌")
+                        print(" ERROR")
                     elif agent_record.get("fallback_used"):
-                        print(" ⚠️ semantic fallback")
+                        print(" WARNING semantic fallback")
                     else:
-                        print(" ✅")
+                        print(" OK")
 
                     print(f"    - {BASELINE_COLUMNS[1]}...", end="", flush=True)
                     keyword_record = await evaluate_parameter_baseline(
@@ -626,7 +626,7 @@ async def run_regret_baseline_comparison() -> None:
                         prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[1]][scenario].append(keyword_record)
-                    print(" ✅" if keyword_record.get("metric_regret_percent") is not None else " ❌")
+                    print(" OK" if keyword_record.get("metric_regret_percent") is not None else " ERROR")
 
                     print(f"    - {BASELINE_COLUMNS[2]}...", end="", flush=True)
                     semantic_record = await evaluate_parameter_baseline(
@@ -639,7 +639,7 @@ async def run_regret_baseline_comparison() -> None:
                         prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[2]][scenario].append(semantic_record)
-                    print(" ✅" if semantic_record.get("metric_regret_percent") is not None else " ❌")
+                    print(" OK" if semantic_record.get("metric_regret_percent") is not None else " ERROR")
 
                     print(f"    - {BASELINE_COLUMNS[3]}...", end="", flush=True)
                     random_record = await evaluate_parameter_baseline(
@@ -652,7 +652,7 @@ async def run_regret_baseline_comparison() -> None:
                         prompt_record,
                     )
                     results_db[BASELINE_COLUMNS[3]][scenario].append(random_record)
-                    print(" ✅" if random_record.get("metric_regret_percent") is not None else " ❌")
+                    print(" OK" if random_record.get("metric_regret_percent") is not None else " ERROR")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
@@ -668,11 +668,11 @@ async def run_regret_baseline_comparison() -> None:
     write_accuracy_table_markdown(accuracy_table_rows, BASELINE_COLUMNS, ACCURACY_TABLE_MD)
     print_accuracy_table(accuracy_table_rows, BASELINE_COLUMNS)
 
-    print(f"\n✅ Regret baseline comparison complete. Results saved to {RESULTS_FILE}")
-    print(f"✅ Average absolute regret table CSV saved to {REGRET_TABLE_CSV}")
-    print(f"✅ Average absolute regret table Markdown saved to {REGRET_TABLE_MD}")
-    print(f"✅ Parameter-selection accuracy table CSV saved to {ACCURACY_TABLE_CSV}")
-    print(f"✅ Parameter-selection accuracy table Markdown saved to {ACCURACY_TABLE_MD}")
+    print(f"\nOK Regret baseline comparison complete. Results saved to {RESULTS_FILE}")
+    print(f"OK Average absolute regret table CSV saved to {REGRET_TABLE_CSV}")
+    print(f"OK Average absolute regret table Markdown saved to {REGRET_TABLE_MD}")
+    print(f"OK Parameter-selection accuracy table CSV saved to {ACCURACY_TABLE_CSV}")
+    print(f"OK Parameter-selection accuracy table Markdown saved to {ACCURACY_TABLE_MD}")
 
 
 if __name__ == "__main__":

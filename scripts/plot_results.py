@@ -92,7 +92,7 @@ def plot_benchmarks(df):
         plt.tight_layout()
         
         plt.savefig(config["filename"], dpi=300)
-        print(f"✅ Saved plot: {config['filename']}")
+        print(f"OK Saved plot: {config['filename']}")
         plt.close()
 
 if __name__ == "__main__":

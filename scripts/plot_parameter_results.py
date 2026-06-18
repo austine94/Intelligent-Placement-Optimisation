@@ -31,7 +31,7 @@ def clean_val(val):
 
 def plot_parameters():
     if not os.path.exists(INPUT_FILE):
-        print("❌ File not found. Run benchmark_parameters.py first!")
+        print("ERROR File not found. Run benchmark_parameters.py first!")
         return
 
     with open(INPUT_FILE, 'r') as f:
@@ -61,11 +61,11 @@ def plot_parameters():
             })
 
     if not rows:
-        print("❌ No valid data found to plot.")
+        print("ERROR No valid data found to plot.")
         return
 
     df = pd.DataFrame(rows)
-    print(f"📉 Processed {len(rows)} valid points. (Skipped {skipped} errors)")
+    print(f" Processed {len(rows)} valid points. (Skipped {skipped} errors)")
     
     # Setup Style
     sns.set_theme(style="whitegrid")
@@ -92,7 +92,7 @@ def plot_parameters():
     filename_alpha = "parameter_consistency_alpha.png"
     plt.tight_layout()
     plt.savefig(filename_alpha, dpi=300)
-    print(f"✅ Saved Alpha plot: {filename_alpha}")
+    print(f"OK Saved Alpha plot: {filename_alpha}")
     plt.close()
 
     # --- PLOT 2: BETA (Cost vs Energy) ---
@@ -116,7 +116,7 @@ def plot_parameters():
     filename_beta = "parameter_consistency_beta.png"
     plt.tight_layout()
     plt.savefig(filename_beta, dpi=300)
-    print(f"✅ Saved Beta plot: {filename_beta}")
+    print(f"OK Saved Beta plot: {filename_beta}")
     plt.close()
 
 if __name__ == "__main__":

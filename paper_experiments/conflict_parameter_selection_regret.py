@@ -354,9 +354,9 @@ async def compute_conflict_parameter_selection_regret(
 
             for seed, seed_runs in runs_by_seed.items():
                 if seed < 0:
-                    print("\n📢 --- Runs with missing/invalid seeds ---")
+                    print("\n --- Runs with missing/invalid seeds ---")
                 else:
-                    print(f"\n📢 --- World Seed {seed} ({len(seed_runs)} saved selections) ---")
+                    print(f"\n --- World Seed {seed} ({len(seed_runs)} saved selections) ---")
                     subprocess.run(
                         ["python", str(GENERATOR_SCRIPT), str(seed)],
                         check=True,
@@ -419,10 +419,10 @@ async def compute_conflict_parameter_selection_regret(
                                 optimal_objective,
                             )
                         )
-                        print(" ✅")
+                        print(" OK")
                     except Exception as exc:
                         record["error"] = f"Regret computation error: {exc}"
-                        print(f" ❌ {exc}")
+                        print(f" ERROR {exc}")
 
                     results[group][scenario].append(record)
 
@@ -436,11 +436,11 @@ async def main() -> None:
     groups = ordered_groups(selections)
     scenarios = ordered_scenarios(selections)
 
-    print("🚀 Conflict parameter-selection regret post-processing")
-    print(f"📥 Reading selections: {args.input}")
-    print(f"🤖 Result groups: {groups}")
-    print(f"🧪 Scenarios: {scenarios}")
-    print("🚫 No Ollama/model calls are made; this only runs solve_allocation via Gurobi.")
+    print(" Conflict parameter-selection regret post-processing")
+    print(f" Reading selections: {args.input}")
+    print(f" Result groups: {groups}")
+    print(f" Scenarios: {scenarios}")
+    print(" No Ollama/model calls are made; this only runs solve_allocation via Gurobi.")
 
     results = await compute_conflict_parameter_selection_regret(selections)
 
@@ -453,9 +453,9 @@ async def main() -> None:
     write_regret_table_markdown(table_rows, groups, args.markdown)
     print_regret_table(table_rows, groups)
 
-    print(f"\n✅ Conflict parameter-selection regret results saved to {args.output}")
-    print(f"✅ Average regret table CSV saved to {args.csv}")
-    print(f"✅ Average regret table Markdown saved to {args.markdown}")
+    print(f"\nOK Conflict parameter-selection regret results saved to {args.output}")
+    print(f"OK Average regret table CSV saved to {args.csv}")
+    print(f"OK Average regret table Markdown saved to {args.markdown}")
 
 
 if __name__ == "__main__":

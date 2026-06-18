@@ -30,7 +30,7 @@ ORDER = ["Cost", "Energy", "Latency", "Cost-Energy", "Cost-Latency", "Energy-Lat
 
 def load_regret_dataframe() -> pd.DataFrame | None:
     if not os.path.exists(INPUT_FILE):
-        print(f"❌ File not found: {INPUT_FILE}")
+        print(f"ERROR File not found: {INPUT_FILE}")
         print("Run scripts/benchmark_regret.py first.")
         return None
 
@@ -62,7 +62,7 @@ def load_regret_dataframe() -> pd.DataFrame | None:
             )
 
     if not rows:
-        print("❌ No valid regret rows found.")
+        print("ERROR No valid regret rows found.")
         return None
 
     print(f"Processed {len(rows)} valid regret rows.")
@@ -82,7 +82,7 @@ def plot_metric(df: pd.DataFrame, y_col: str, title: str, output_file: str, colo
     plt.tight_layout()
     plt.savefig(output_file, dpi=300)
     plt.close()
-    print(f"✅ Saved plot: {output_file}")
+    print(f"OK Saved plot: {output_file}")
 
 
 def main() -> None:

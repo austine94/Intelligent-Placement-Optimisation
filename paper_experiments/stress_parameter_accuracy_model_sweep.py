@@ -278,41 +278,41 @@ async def run_stress_parameter_accuracy_model_sweep() -> None:
     import ollama
 
     print(
-        f"🚀 Stress parameter accuracy model sweep: {N_REPS} reps x "
+        f" Stress parameter accuracy model sweep: {N_REPS} reps x "
         f"{len(MODELS)} models x {len(STRESS_PROMPTS)} prompts"
     )
-    print(f"🤖 Models: {MODELS}")
-    print(f"🌡️ Agent temperature: {TEMPERATURE}")
+    print(f" Models: {MODELS}")
+    print(f" Agent temperature: {TEMPERATURE}")
     print(
-        f"🧪 Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}"
+        f" Prompt fuzzing model: {PROMPT_FUZZ_MODEL} temp={PROMPT_FUZZ_TEMPERATURE}"
     )
-    print(f"🎯 Stress-test target parameters: {STRESS_OPTIMAL_PARAMS}")
-    print(f"📏 Correct when alpha/beta are within ±{TOLERANCE} of target")
-    print("🛑 Parameter-selection only: no Gurobi or allocation solver calls are made")
+    print(f" Stress-test target parameters: {STRESS_OPTIMAL_PARAMS}")
+    print(f" Correct when alpha/beta are within ±{TOLERANCE} of target")
+    print(" Parameter-selection only: no Gurobi or allocation solver calls are made")
 
     results_db: dict[str, dict[str, list[dict[str, Any]]]] = {
         model: {scenario: [] for scenario in STRESS_PROMPTS} for model in MODELS
     }
 
     for rep in range(N_REPS):
-        print(f"\n📢 --- REP {rep + 1}/{N_REPS} ---")
+        print(f"\n --- REP {rep + 1}/{N_REPS} ---")
 
         prompt_records: dict[str, dict[str, Any]] = {}
         for scenario in STRESS_SCENARIO_ORDER:
             canonical_prompt = STRESS_PROMPTS[scenario]
-            print(f"  🧪 Stress prompt variant: {scenario:<20}...", end="", flush=True)
+            print(f"   Stress prompt variant: {scenario:<20}...", end="", flush=True)
             prompt_record = generate_stress_prompt_variant(
                 scenario, canonical_prompt, rep
             )
             prompt_records[scenario] = prompt_record
             print(
-                " ✅"
+                " OK"
                 if "prompt_generation_error" not in prompt_record
-                else " ⚠️ fallback"
+                else " WARNING fallback"
             )
 
         for model in MODELS:
-            print(f"  🤖 Model: {model}")
+            print(f"   Model: {model}")
             for scenario in STRESS_SCENARIO_ORDER:
                 prompt_record = prompt_records[scenario]
                 prompt = prompt_record["prompt"]
@@ -347,7 +347,7 @@ async def run_stress_parameter_accuracy_model_sweep() -> None:
                         record["error"] = "No tool call from agent"
                         record.update(score_stress_parameter_selection(scenario, None))
                         results_db[model][scenario].append(record)
-                        print(" ❌ Agent failed (No Tool)")
+                        print(" ERROR Agent failed (No Tool)")
                         continue
 
                     tool_call = tool_calls[0]
@@ -364,20 +364,20 @@ async def run_stress_parameter_accuracy_model_sweep() -> None:
                             score_stress_parameter_selection(scenario, agent_fn_args)
                         )
                         results_db[model][scenario].append(record)
-                        print(f" ⚠️ Agent skipped ({agent_fn_name})")
+                        print(f" WARNING Agent skipped ({agent_fn_name})")
                         continue
 
                     record.update(
                         score_stress_parameter_selection(scenario, agent_fn_args)
                     )
                     results_db[model][scenario].append(record)
-                    print(f" ✅ score={record['parameter_selection_score']:.1f}")
+                    print(f" OK score={record['parameter_selection_score']:.1f}")
 
                 except Exception as exc:
                     record["error"] = f"Agent run error: {exc}"
                     record.update(score_stress_parameter_selection(scenario, None))
                     results_db[model][scenario].append(record)
-                    print(f" ❌ Agent error: {exc}")
+                    print(f" ERROR Agent error: {exc}")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
@@ -389,10 +389,10 @@ async def run_stress_parameter_accuracy_model_sweep() -> None:
     print_stress_accuracy_table(table_rows)
 
     print(
-        f"\n✅ Stress parameter accuracy model sweep complete. Results saved to {RESULTS_FILE}"
+        f"\nOK Stress parameter accuracy model sweep complete. Results saved to {RESULTS_FILE}"
     )
-    print(f"✅ Accuracy table CSV saved to {ACCURACY_TABLE_CSV}")
-    print(f"✅ Accuracy table Markdown saved to {ACCURACY_TABLE_MD}")
+    print(f"OK Accuracy table CSV saved to {ACCURACY_TABLE_CSV}")
+    print(f"OK Accuracy table Markdown saved to {ACCURACY_TABLE_MD}")
 
 
 if __name__ == "__main__":

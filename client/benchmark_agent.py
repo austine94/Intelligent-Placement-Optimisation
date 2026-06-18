@@ -56,8 +56,8 @@ def parse_metrics_from_text(text_output: str) -> Dict[str, float]:
     return metrics
 
 async def run_benchmark():
-    print(f"🚀 Starting Benchmark: {N_REPS} reps x {len(TEST_PROMPTS)} prompts")
-    print(f"🤖 Model: {MODEL} (Local)")
+    print(f" Starting Benchmark: {N_REPS} reps x {len(TEST_PROMPTS)} prompts")
+    print(f" Model: {MODEL} (Local)")
 
     # Start MCP Server
     server_params = StdioServerParameters(
@@ -89,7 +89,7 @@ async def run_benchmark():
             # Loop 1: Iterate through SEEDS (0 to N_REPS)
             for i in range(N_REPS):
                 current_seed = i
-                print(f"\n📢 --- REP {i+1}/{N_REPS} (World Seed {current_seed}) ---")
+                print(f"\n --- REP {i+1}/{N_REPS} (World Seed {current_seed}) ---")
                 
                 # A. Generate the World ONCE for this seed
                 # We pass the seed as a command line argument
@@ -123,7 +123,7 @@ async def run_benchmark():
                         tool_calls = msg.get('tool_calls', [])
 
                         if not tool_calls:
-                            print(" ❌ Failed (No Tool)")
+                            print(" ERROR Failed (No Tool)")
                             continue
                             
                         # C. Execute Tool
@@ -144,18 +144,18 @@ async def run_benchmark():
                                 "metrics": parsed
                             }
                             results_db[category].append(record)
-                            print(" ✅")
+                            print(" OK")
                         else:
-                            print(f" ⚠️ Skipped ({fn_name})")
+                            print(f" WARNING Skipped ({fn_name})")
 
                     except Exception as e:
-                        print(f" ❌ Error: {e}")
+                        print(f" ERROR Error: {e}")
 
     # 4. Save to JSON
     with open(RESULTS_FILE, "w") as f:
         json.dump(results_db, f, indent=2)
     
-    print(f"\n✅ Benchmark Complete. Results saved to {RESULTS_FILE}")
+    print(f"\nOK Benchmark Complete. Results saved to {RESULTS_FILE}")
 
 if __name__ == "__main__":
     asyncio.run(run_benchmark())

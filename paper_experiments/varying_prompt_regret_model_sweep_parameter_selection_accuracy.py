@@ -112,10 +112,10 @@ def run_varying_prompt_regret_model_sweep_parameter_selection_accuracy() -> None
     if not models:
         raise ValueError(f"No model result blocks found in {REGRET_RESULTS_FILE}")
 
-    print("🚀 Varying-prompt regret model-sweep parameter-selection accuracy")
-    print(f"📥 Reading: {REGRET_RESULTS_FILE}")
-    print(f"🤖 Models: {models}")
-    print(f"📏 Correct when alpha/beta are within ±{TOLERANCE} of target")
+    print(" Varying-prompt regret model-sweep parameter-selection accuracy")
+    print(f" Reading: {REGRET_RESULTS_FILE}")
+    print(f" Models: {models}")
+    print(f" Correct when alpha/beta are within ±{TOLERANCE} of target")
 
     accuracy_results = score_varying_prompt_regret_model_sweep_parameters(regret_results, models)
 
@@ -128,9 +128,9 @@ def run_varying_prompt_regret_model_sweep_parameter_selection_accuracy() -> None
     write_accuracy_table_markdown(table_rows, models, ACCURACY_TABLE_MD)
     print_accuracy_table(table_rows, models)
 
-    print(f"\n✅ Parameter-selection accuracy results saved to {RESULTS_FILE}")
-    print(f"✅ Accuracy table CSV saved to {ACCURACY_TABLE_CSV}")
-    print(f"✅ Accuracy table Markdown saved to {ACCURACY_TABLE_MD}")
+    print(f"\nOK Parameter-selection accuracy results saved to {RESULTS_FILE}")
+    print(f"OK Accuracy table CSV saved to {ACCURACY_TABLE_CSV}")
+    print(f"OK Accuracy table Markdown saved to {ACCURACY_TABLE_MD}")
 
 
 if __name__ == "__main__":

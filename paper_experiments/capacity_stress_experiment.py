@@ -313,7 +313,7 @@ async def run_capacity_stress_experiment() -> None:
     from mcp.client.stdio import stdio_client
 
     print(
-        f"🚀 Capacity stress: {N_REPS} reps x {len(CAPACITY_RATIOS)} ratios x "
+        f" Capacity stress: {N_REPS} reps x {len(CAPACITY_RATIOS)} ratios x "
         f"{len(MODELS)} models x {len(TEMPERATURES)} temps x 1 scenario ({SCENARIO})"
     )
     server_params = StdioServerParameters(command="python", args=[str(SERVER_SCRIPT)], env=os.environ.copy())

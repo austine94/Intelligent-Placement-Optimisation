@@ -109,16 +109,16 @@ async def run_tool_calling_reliability_model_sweep_ablated() -> None:
     import ollama
 
     print(
-        f"🚀 Ablated tool-calling reliability model sweep: {N_REPS} reps x "
+        f" Ablated tool-calling reliability model sweep: {N_REPS} reps x "
         f"{len(MODELS)} models x {len(TEST_PROMPTS)} prompts"
     )
-    print(f"🤖 Models: {MODELS}")
-    print(f"🌡️ Temperature: {TEMPERATURE}")
-    print(f"🛠️ Correct tool: {CORRECT_TOOL_NAME}")
-    print(f"🔁 Agent tries per prompt: {MAX_AGENT_TRIES}")
-    print("🧪 Ablations: no system instructions; no retries after a failed/missing tool call.")
-    print("🧰 Tool descriptions remain enabled via the original solve_allocation tool definition.")
-    print("🚫 This experiment records the selected tool only; it does not execute tools or call Gurobi.")
+    print(f" Models: {MODELS}")
+    print(f" Temperature: {TEMPERATURE}")
+    print(f" Correct tool: {CORRECT_TOOL_NAME}")
+    print(f" Agent tries per prompt: {MAX_AGENT_TRIES}")
+    print(" Ablations: no system instructions; no retries after a failed/missing tool call.")
+    print(" Tool descriptions remain enabled via the original solve_allocation tool definition.")
+    print(" This experiment records the selected tool only; it does not execute tools or call Gurobi.")
 
     results_db: dict[str, dict[str, list[dict[str, Any]]]] = {
         model: {scenario: [] for scenario in TEST_PROMPTS}
@@ -126,9 +126,9 @@ async def run_tool_calling_reliability_model_sweep_ablated() -> None:
     }
 
     for rep in range(N_REPS):
-        print(f"\n📢 --- REP {rep + 1}/{N_REPS} ---")
+        print(f"\n --- REP {rep + 1}/{N_REPS} ---")
         for model in MODELS:
-            print(f"  🤖 Model: {model}")
+            print(f"   Model: {model}")
             for scenario in SCENARIO_ORDER:
                 prompt = TEST_PROMPTS[scenario]
                 print(f"    > Strat: {scenario:<15}...", end="", flush=True)
@@ -182,9 +182,9 @@ async def run_tool_calling_reliability_model_sweep_ablated() -> None:
 
                 if record["tool_call_failure"]:
                     first_tool_name = record["first_tool_name"] or "No Tool"
-                    print(f" ❌ failed in one try ({first_tool_name})")
+                    print(f" ERROR failed in one try ({first_tool_name})")
                 else:
-                    print(" ✅ correct on first try")
+                    print(" OK correct on first try")
 
     EXPERIMENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     with RESULTS_FILE.open("w", encoding="utf-8") as f:
@@ -195,9 +195,9 @@ async def run_tool_calling_reliability_model_sweep_ablated() -> None:
     write_failure_table_markdown(table_rows, MODELS, FAILURE_TABLE_MD)
     print_failure_table(table_rows, MODELS)
 
-    print(f"\n✅ Ablated tool-calling reliability model sweep complete. Results saved to {RESULTS_FILE}")
-    print(f"✅ Failure table CSV saved to {FAILURE_TABLE_CSV}")
-    print(f"✅ Failure table Markdown saved to {FAILURE_TABLE_MD}")
+    print(f"\nOK Ablated tool-calling reliability model sweep complete. Results saved to {RESULTS_FILE}")
+    print(f"OK Failure table CSV saved to {FAILURE_TABLE_CSV}")
+    print(f"OK Failure table Markdown saved to {FAILURE_TABLE_MD}")
 
 
 if __name__ == "__main__":

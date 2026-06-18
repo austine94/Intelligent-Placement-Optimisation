@@ -86,7 +86,7 @@ def create_tables(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
 
 def main() -> None:
     if not os.path.exists(INPUT_FILE):
-        print(f"❌ Missing input file: {INPUT_FILE}")
+        print(f"ERROR Missing input file: {INPUT_FILE}")
         print("Run scripts/benchmark_temp_sweep.py first.")
         return
 
@@ -95,7 +95,7 @@ def main() -> None:
 
     rows = build_rows(data)
     if not rows:
-        print("❌ No valid metric rows found in temp sweep results.")
+        print("ERROR No valid metric rows found in temp sweep results.")
         return
 
     df = pd.DataFrame(rows)
@@ -106,7 +106,7 @@ def main() -> None:
     for metric, table in tables.items():
         csv_path = os.path.join(OUTPUT_DIR, f"temp_sweep_table_{metric}.csv")
         table.to_csv(csv_path, float_format="%.4f")
-        print(f"✅ Saved {metric} table CSV: {csv_path}")
+        print(f"OK Saved {metric} table CSV: {csv_path}")
 
     print("\n--- Preview: Cost Table ---")
     print(tables["cost"].round(4))

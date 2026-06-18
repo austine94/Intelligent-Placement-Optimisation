@@ -128,9 +128,9 @@ def compute_regret(
 
 
 async def run_regret_benchmark() -> None:
-    print(f"🚀 Regret Benchmark: {N_REPS} reps x {len(TEST_PROMPTS)} prompts")
-    print(f"🤖 Model: {MODEL} (Local)")
-    print(f"🌡️ Agent Temperature: {TEMPERATURE}")
+    print(f" Regret Benchmark: {N_REPS} reps x {len(TEST_PROMPTS)} prompts")
+    print(f" Model: {MODEL} (Local)")
+    print(f" Agent Temperature: {TEMPERATURE}")
 
     server_params = StdioServerParameters(command="python", args=[server_script], env=os.environ.copy())
 
@@ -155,7 +155,7 @@ async def run_regret_benchmark() -> None:
                 )
 
             for rep in range(N_REPS):
-                print(f"\n📢 --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
+                print(f"\n --- REP {rep + 1}/{N_REPS} (World Seed {rep}) ---")
                 subprocess.run(["python", generator_script, str(rep)], check=True, capture_output=True)
 
                 for category, prompt in TEST_PROMPTS.items():
@@ -185,7 +185,7 @@ async def run_regret_benchmark() -> None:
                         if not tool_calls:
                             record["error"] = "No tool call from agent"
                             results_db[category].append(record)
-                            print(" ❌ Agent failed (No Tool)")
+                            print(" ERROR Agent failed (No Tool)")
                             continue
 
                         tool_call = tool_calls[0]
@@ -196,7 +196,7 @@ async def run_regret_benchmark() -> None:
                         if agent_fn_name != "solve_allocation":
                             record["error"] = f"Agent called unexpected tool: {agent_fn_name}"
                             results_db[category].append(record)
-                            print(f" ⚠️ Agent skipped ({agent_fn_name})")
+                            print(f" WARNING Agent skipped ({agent_fn_name})")
                             continue
 
                         agent_result = await session.call_tool(agent_fn_name, agent_fn_args)
@@ -207,7 +207,7 @@ async def run_regret_benchmark() -> None:
                     except Exception as exc:
                         record["error"] = f"Agent run error: {exc}"
                         results_db[category].append(record)
-                        print(f" ❌ Agent error: {exc}")
+                        print(f" ERROR Agent error: {exc}")
                         continue
 
                     # Deterministic baseline run
@@ -221,7 +221,7 @@ async def run_regret_benchmark() -> None:
                     except Exception as exc:
                         record["error"] = f"Baseline run error: {exc}"
                         results_db[category].append(record)
-                        print(f" ❌ Baseline error: {exc}")
+                        print(f" ERROR Baseline error: {exc}")
                         continue
 
                     agent_obj = record.get("agent_objective")
@@ -230,7 +230,7 @@ async def run_regret_benchmark() -> None:
                     if agent_obj is None or baseline_obj is None:
                         record["error"] = "Could not parse objective(s) for regret calculation"
                         results_db[category].append(record)
-                        print(" ⚠️ Missing objective")
+                        print(" WARNING Missing objective")
                         continue
 
                     record.update(
@@ -242,13 +242,13 @@ async def run_regret_benchmark() -> None:
                         )
                     )
                     results_db[category].append(record)
-                    print(" ✅")
+                    print(" OK")
 
     os.makedirs(os.path.dirname(RESULTS_FILE), exist_ok=True)
     with open(RESULTS_FILE, "w", encoding="utf-8") as f:
         json.dump(results_db, f, indent=2)
 
-    print(f"\n✅ Regret benchmark complete. Results saved to {RESULTS_FILE}")
+    print(f"\nOK Regret benchmark complete. Results saved to {RESULTS_FILE}")
 
 
 if __name__ == "__main__":

@@ -100,7 +100,7 @@ async def run_agent():
             5. get_solution_metrics(): Get the Cost/Energy/Latency of the most recent solution.
                 Example call: get_solution_metrics()
     '''
-    print(f"🚀 Launching Server Process: {server_script}")
+    print(f" Launching Server Process: {server_script}")
     
     #runs the server and scripts 
     server_params = StdioServerParameters(
