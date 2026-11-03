@@ -57,7 +57,11 @@ def read_optimal_solution() -> str:
         row = conn.execute("SELECT * FROM optimal_solutions ORDER BY solution_id DESC LIMIT 1").fetchone()
     if row is None:
         return "No optimal solution stored yet."
-    return json.dumps(dict(row), indent=2)
+    out = dict(row)
+    assignments = json.loads(out.pop("assignments") or "{}")
+    out.pop("bucket_labels", None)  # per-viewer detail stays in the database, not the agent's context
+    out["viewers_per_node"] = {k: len(v) for k, v in assignments.items()}
+    return json.dumps(out, indent=2)
 
 @mcp.tool()
 def render_optimal_solution() -> str:

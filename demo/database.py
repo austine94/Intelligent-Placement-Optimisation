@@ -54,7 +54,13 @@ CREATE TABLE IF NOT EXISTS optimal_solutions (
   energy_cost REAL,
   avg_latency REAL,
   open_nodes TEXT,
-  assignments TEXT
+  assignments TEXT,
+  n_viewers INTEGER,
+  n_buckets INTEGER,
+  solve_seconds REAL,
+  bucket_labels TEXT,
+  ingested_at TEXT,
+  n_nodes INTEGER
 );
 """
 
@@ -70,6 +76,10 @@ def connect(db_path: Path = DB_PATH):
 def initialise_database(db_path: Path = DB_PATH):
     with connect(db_path) as conn:
         conn.executescript(SCHEMA)
+        existing = {r["name"] for r in conn.execute("PRAGMA table_info(optimal_solutions)")}
+        for col, kind in (("n_viewers", "INTEGER"), ("n_buckets", "INTEGER"), ("solve_seconds", "REAL"), ("bucket_labels", "TEXT"), ("ingested_at", "TEXT"), ("n_nodes", "INTEGER")):
+            if col not in existing:
+                conn.execute(f"ALTER TABLE optimal_solutions ADD COLUMN {col} {kind}")
         conn.execute("INSERT OR IGNORE INTO ingestion_summary (id) VALUES (1)")
         default_priority = POLICY_TXT.read_text().strip() if POLICY_TXT.exists() else "minimise financial cost"
         conn.execute(
